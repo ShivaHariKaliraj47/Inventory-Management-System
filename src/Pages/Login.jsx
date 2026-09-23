@@ -5,12 +5,12 @@ const emailRegex = /^[A-Za-z][A-Za-z0-9._-]*@gmail\.com$/;
 const phoneRegex = /^9[678]\d{8}$/;
 
 const pwdRules = [
-  { id: "len",   label: "At least 8 characters",           test: v => v.length >= 8 && v.length <= 64 },
-  { id: "upper", label: "One uppercase letter (A–Z)",      test: v => /[A-Z]/.test(v) },
-  { id: "lower", label: "One lowercase letter (a–z)",      test: v => /[a-z]/.test(v) },
-  { id: "num",   label: "One number (0–9)",                test: v => /[0-9]/.test(v) },
-  { id: "spec",  label: "One special character (!@#$…)",   test: v => /[^A-Za-z0-9]/.test(v) },
-  { id: "nospace", label: "No spaces",                     test: v => !/\s/.test(v) },
+  { id: "len",     label: "At least 8 characters",          test: v => v.length >= 8 && v.length <= 64 },
+  { id: "upper",   label: "One uppercase letter (A–Z)",     test: v => /[A-Z]/.test(v) },
+  { id: "lower",   label: "One lowercase letter (a–z)",     test: v => /[a-z]/.test(v) },
+  { id: "num",     label: "One number (0–9)",               test: v => /[0-9]/.test(v) },
+  { id: "spec",    label: "One special character (!@#$…)",  test: v => /[^A-Za-z0-9]/.test(v) },
+  { id: "nospace", label: "No spaces",                      test: v => !/\s/.test(v) },
 ];
 
 function PasswordStrength({ password }) {
@@ -40,44 +40,80 @@ function PasswordStrength({ password }) {
 
 export default function Login({ onLogin, accounts, onCreateAccount }) {
   const [tab, setTab] = useState("signin");
-  const [email, setEmail] = useState("");
+
+  // Sign-in state
+  const [identifier, setIdentifier] = useState(""); // email or phone number
   const [password, setPassword] = useState("");
-  const [confirmPass, setConfirmPass] = useState("");
+  const [showPass, setShowPass] = useState(false);
+
+  // Create account state
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [showPass, setShowPass] = useState(false);
+  const [email, setEmail] = useState("");
+  const [createPass, setCreatePass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showCreatePass, setShowCreatePass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agree, setAgree] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const reset = () => { setEmail(""); setPassword(""); setConfirmPass(""); setFullName(""); setPhone(""); setError(""); setSuccess(""); setAgree(false); };
+  const reset = () => {
+    setIdentifier(""); setPassword(""); setFullName(""); setPhone("");
+    setEmail(""); setCreatePass(""); setConfirmPass("");
+    setError(""); setSuccess(""); setAgree(false);
+  };
 
+  /* ── Sign In ── */
   const handleSignIn = (e) => {
     e.preventDefault();
     setError("");
-    if (!emailRegex.test(email)) { setError("Enter a valid Gmail address (e.g. shiva123@gmail.com)."); return; }
+    const id = identifier.trim();
+    if (!id) { setError("Enter your email address or phone number."); return; }
     if (!password) { setError("Password is required."); return; }
-    const acct = accounts.find(a => a.email === email && a.password === password);
-    if (!acct) { setError("Invalid email or password. Please check your credentials."); return; }
+    // Match by email OR phone number
+    const acct = accounts.find(a =>
+      (a.email === id || a.phone === id) && a.password === password
+    );
+    if (!acct) { setError("Invalid credentials. Check your email/phone and password."); return; }
     setLoading(true);
     setTimeout(() => { setLoading(false); onLogin(acct); }, 700);
   };
 
+  /* ── Create Account ── */
   const handleCreate = (e) => {
     e.preventDefault();
     setError("");
     if (!fullName.trim()) { setError("Full name is required."); return; }
-    if (!phoneRegex.test(phone)) { setError("Enter a valid 10-digit phone number starting with 9 (e.g. 9800000001)."); return; }
-    if (!emailRegex.test(email)) { setError("Enter a valid Gmail address (e.g. shiva123@gmail.com)."); return; }
-    if (!pwdRules.every(r => r.test(password))) { setError("Password does not meet all requirements."); return; }
-    if (password !== confirmPass) { setError("Passwords do not match."); return; }
+
+    // At least one of email or phone required
+    const hasEmail = emailRegex.test(email);
+    const hasPhone = phoneRegex.test(phone);
+    const filledPhone = phone.trim().length > 0;
+    const filledEmail = email.trim().length > 0;
+
+    if (!filledEmail && !filledPhone) {
+      setError("Provide at least one: a valid email address or a phone number.");
+      return;
+    }
+    if (filledEmail && !hasEmail) {
+      setError("Enter a valid Gmail address (e.g. shiva123@gmail.com).");
+      return;
+    }
+    if (filledPhone && !hasPhone) {
+      setError("Enter a valid 10-digit phone number starting with 9 (e.g. 9812345678).");
+      return;
+    }
+    if (!pwdRules.every(r => r.test(createPass))) { setError("Password does not meet all requirements."); return; }
+    if (createPass !== confirmPass) { setError("Passwords do not match."); return; }
     if (!agree) { setError("You must agree to the Terms and Conditions."); return; }
-    if (accounts.find(a => a.email === email)) { setError("Email already exists. Please sign in."); return; }
-    if (accounts.find(a => a.phone === phone)) { setError("Phone number already registered."); return; }
-    onCreateAccount({ email, password, fullName, phone });
-    setSuccess("Account created successfully! You can now sign in.");
+    if (filledEmail && accounts.find(a => a.email === email)) { setError("Email already registered. Please sign in."); return; }
+    if (filledPhone && accounts.find(a => a.phone === phone)) { setError("Phone number already registered."); return; }
+
+    onCreateAccount({ email: filledEmail ? email : "", password: createPass, fullName, phone: filledPhone ? phone : "" });
+    setSuccess("Account created! You can now sign in.");
     setTab("signin");
     reset();
   };
@@ -116,9 +152,13 @@ export default function Login({ onLogin, accounts, onCreateAccount }) {
           {/* SIGN IN */}
           {tab === "signin" && (
             <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <Fld label="Email Address">
-                <Inp type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="shiva123@gmail.com" required />
-                <Hint>Must be a @gmail.com address starting with a letter</Hint>
+              <Fld label="Email Address or Phone Number">
+                <Inp
+                  value={identifier}
+                  onChange={e => setIdentifier(e.target.value)}
+                  placeholder="shiva123@gmail.com  or  9812345678"
+                />
+                <Hint>Enter the email or phone number you registered with</Hint>
               </Fld>
               <Fld label="Password">
                 <PassInp value={password} onChange={e => setPassword(e.target.value)} show={showPass} toggle={() => setShowPass(s => !s)} placeholder="Your password" />
@@ -138,26 +178,26 @@ export default function Login({ onLogin, accounts, onCreateAccount }) {
           {/* CREATE ACCOUNT */}
           {tab === "create" && (
             <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-              <Fld label="Full Name">
-                <Inp value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Shiva Hari" required />
+              <Fld label="Full Name *">
+                <Inp value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Shiva Hari" />
               </Fld>
-              <Fld label="Phone Number">
-                <Inp type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="9812345678" required />
-                <Hint>10-digit number starting with 9 (e.g. 9812345678)</Hint>
+              <Fld label="Phone Number (optional)">
+                <Inp type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="9812345678" />
+                <Hint>10-digit number starting with 9 — at least email or phone required</Hint>
               </Fld>
-              <Fld label="Email Address">
-                <Inp type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="shiva123@gmail.com" required />
+              <Fld label="Email Address (optional)">
+                <Inp type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="shiva123@gmail.com" />
                 <Hint>Must start with a letter and end with @gmail.com</Hint>
               </Fld>
-              <Fld label="Password">
-                <PassInp value={password} onChange={e => setPassword(e.target.value)} show={showPass} toggle={() => setShowPass(s => !s)} placeholder="Create a strong password" />
-                <PasswordStrength password={password} />
+              <Fld label="Password *">
+                <PassInp value={createPass} onChange={e => setCreatePass(e.target.value)} show={showCreatePass} toggle={() => setShowCreatePass(s => !s)} placeholder="Create a strong password" />
+                <PasswordStrength password={createPass} />
               </Fld>
-              <Fld label="Confirm Password">
+              <Fld label="Confirm Password *">
                 <PassInp value={confirmPass} onChange={e => setConfirmPass(e.target.value)} show={showConfirm} toggle={() => setShowConfirm(s => !s)} placeholder="Repeat password" />
                 {confirmPass.length > 0 && (
-                  <div style={{ fontSize: "0.7rem", marginTop: 4, color: confirmPass === password ? "#16a34a" : "#ef4444", fontWeight: 600 }}>
-                    {confirmPass === password ? "✓ Passwords match" : "✗ Passwords do not match"}
+                  <div style={{ fontSize: "0.7rem", marginTop: 4, color: confirmPass === createPass ? "#16a34a" : "#ef4444", fontWeight: 600 }}>
+                    {confirmPass === createPass ? "✓ Passwords match" : "✗ Passwords do not match"}
                   </div>
                 )}
               </Fld>

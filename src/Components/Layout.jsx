@@ -27,6 +27,7 @@ function ExpiryIcon() {
 }
 
 export default function Layout({ currentPage, setCurrentPage, currentUser, onLogout, children, shared }) {
+  const [showCalc, setShowCalc] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
