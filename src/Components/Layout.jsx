@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
+import { Calculator as CalculatorIcon } from "lucide-react";
+import { Settings as SettingsIcon } from "lucide-react";
+import Calculator from "./Calculator";
 import { getExpiryStatus } from "../data";
 import {
   IconHome, IconBox, IconTag, IconTruck, IconCart,
   IconDollar, IconBarChart, IconClipboard,
   IconBell, IconSearch, IconLogout, IconChevron,
-} from "./Icon";
+} from "./Icons";
 
 const NAV_ITEMS = [
   { key: "dashboard",  label: "Dashboard",        Icon: IconHome },
@@ -16,6 +19,7 @@ const NAV_ITEMS = [
   { key: "stock",      label: "Stock Records",    Icon: IconBarChart },
   { key: "reports",    label: "Reports",          Icon: IconClipboard },
   { key: "expiry",     label: "Expiry Mgmt",      Icon: ExpiryIcon },
+  { key: "settings",   label: "Settings",         Icon: SettingsIcon },
 ];
 
 function ExpiryIcon() {
@@ -27,8 +31,8 @@ function ExpiryIcon() {
 }
 
 export default function Layout({ currentPage, setCurrentPage, currentUser, onLogout, children, shared }) {
-  const [showCalc, setShowCalc] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQ, setSearchQ] = useState("");
@@ -214,9 +218,23 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
 
           <div style={{ flex: 1 }} />
 
+          {/* Quick calculator */}
+          <div style={{ position: "relative" }}>
+            <button type="button" aria-label="Open calculator" aria-expanded={showCalculator} title="Calculator"
+              onClick={() => { setShowCalculator(open => !open); setShowNotifs(false); setShowUserMenu(false); }}
+              style={{ ...iconBtnStyle, color: showCalculator ? "var(--primary)" : "var(--muted-foreground)" }}>
+              <CalculatorIcon size={18} strokeWidth={1.8} />
+            </button>
+            {showCalculator && (
+              <DropMenu width={290} onClose={() => setShowCalculator(false)}>
+                <Calculator onClose={() => setShowCalculator(false)} />
+              </DropMenu>
+            )}
+          </div>
+
           {/* Bell */}
           <div style={{ position: "relative" }}>
-            <button onClick={() => { setShowNotifs(n => !n); setShowUserMenu(false); }}
+            <button onClick={() => { setShowNotifs(n => !n); setShowUserMenu(false); setShowCalculator(false); }}
               style={{ ...iconBtnStyle, position: "relative" }}>
               <IconBell />
               {notifications.length > 0 && (
@@ -246,7 +264,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
 
           {/* Admin */}
           <div style={{ position: "relative" }}>
-            <button onClick={() => { setShowUserMenu(m => !m); setShowNotifs(false); }}
+            <button onClick={() => { setShowUserMenu(m => !m); setShowNotifs(false); setShowCalculator(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 5px", border: "1.5px solid var(--border)", borderRadius: 10, background: "var(--muted)", cursor: "pointer", transition: "border 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "var(--primary)"}
               onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}

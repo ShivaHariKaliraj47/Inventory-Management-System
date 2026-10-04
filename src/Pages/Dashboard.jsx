@@ -1,5 +1,5 @@
 import { getExpiryStatus } from "../data";
-import { IconBox, IconDollar, IconCart, IconBarChart, IconTruck, IconTrending, IconTag } from "../Components/Icon";
+import { IconBox, IconDollar, IconCart, IconBarChart, IconTruck, IconTrending, IconTag } from "../components/Icons";
 
 function StatCard({ Icon, iconColor, iconBg, label, value, sub, onClick }) {
   return (
