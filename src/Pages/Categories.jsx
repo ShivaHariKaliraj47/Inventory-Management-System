@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconBox } from "../components/Icons";
+import { IconBox } from "../Components/Icons";
 
 function Modal({ title, onClose, children }) {
   return (

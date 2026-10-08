@@ -12,13 +12,15 @@ import Reports from "./Pages/Reports";
 import ExpiryManagement from "./Pages/ExpiryManagement";
 import Settings from "./Pages/Settings";
 import { supabase } from "./Authentication/supabase";
+import { loadInventory, saveInventory } from "./api/inventory";
 import { initialCategories, initialProducts, initialSuppliers, initialPurchases, initialSales } from "./data";
 
-const profile = user => user && ({ email: user.email, fullName: user.user_metadata?.full_name || "", phone: user.user_metadata?.phone || "" });
+const profile = user => user && ({ id: user.id, email: user.email, fullName: user.user_metadata?.full_name || "", phone: user.user_metadata?.phone || "" });
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(!!supabase);
+  const [inventoryReady, setInventoryReady] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
 
   const [categories, setCategories] = useState(initialCategories);
@@ -41,13 +43,45 @@ export default function App() {
     return () => { active = false; subscription.unsubscribe(); };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    if (!currentUser) { setInventoryReady(false); return; }
+    setInventoryReady(false);
+    loadInventory()
+      .then(state => {
+        if (!active) return;
+        if (state) {
+          setCategories(state.categories);
+          setProducts(state.products);
+          setSuppliers(state.suppliers);
+          setPurchases(state.purchases);
+          setSales(state.sales);
+        }
+        setInventoryReady(true);
+      })
+      .catch(error => {
+        console.error("Inventory backend unavailable:", error);
+        if (active) setInventoryReady(true);
+      });
+    return () => { active = false; };
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser || !inventoryReady) return;
+    const timer = window.setTimeout(() => {
+      saveInventory({ categories, products, suppliers, purchases, sales })
+        .catch(error => console.error("Unable to save inventory:", error));
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [currentUser, inventoryReady, categories, products, suppliers, purchases, sales]);
+
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut();
     setCurrentUser(null);
     setCurrentPage("dashboard");
   };
 
-  if (authLoading) return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "var(--muted-foreground)" }}>Loading account…</div>;
+  if (authLoading || (currentUser && !inventoryReady)) return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", color: "var(--muted-foreground)" }}>Loading inventory…</div>;
 
   if (!currentUser || window.location.pathname === "/reset-password") {
     return <Login />;
