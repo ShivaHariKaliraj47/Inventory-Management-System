@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 
 const EMPTY = { name: "", contact: "", email: "", address: "", products: "" };
 
@@ -48,10 +49,11 @@ export default function Suppliers({ suppliers, setSuppliers }) {
         </div>
         <div style={{ overflowX: "auto" }}>
           <table>
-            <thead><tr><th>ID</th><th>Supplier Name</th><th>Contact</th><th>Email</th><th>Products Supplied</th><th>Actions</th></tr></thead>
+            <thead><tr><th style={{ width: 48, textAlign: "center" }}>S.N</th><th>ID</th><th>Supplier Name</th><th>Contact</th><th>Email</th><th>Products Supplied</th><th>Actions</th></tr></thead>
             <tbody>
-              {filtered.map(s => (
+              {filtered.map((s, index) => (
                 <tr key={s.id}>
+                  <td style={{ textAlign: "center", color: "var(--muted-foreground)", fontWeight: 600, fontSize: "0.8rem", fontFamily: "JetBrains Mono" }}>{index + 1}</td>
                   <td className="mono" style={{ color: "var(--muted-foreground)", fontSize: "0.8rem" }}>{s.id}</td>
                   <td style={{ fontWeight: 600 }}>{s.name}</td>
                   <td className="mono">{s.contact}</td>
@@ -76,7 +78,7 @@ export default function Suppliers({ suppliers, setSuppliers }) {
           <div style={mBox}>
             <div style={mHdr}>
               <strong style={{ fontFamily: "DM Sans" }}>{editing ? "Edit Supplier" : "Add Supplier"}</strong>
-              <button onClick={() => setShowModal(false)} style={xBtn}>✕</button>
+              <button onClick={() => setShowModal(false)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -100,7 +102,7 @@ export default function Suppliers({ suppliers, setSuppliers }) {
           <div style={mBox}>
             <div style={mHdr}>
               <strong style={{ fontFamily: "DM Sans" }}>Supplier Details</strong>
-              <button onClick={() => setViewItem(null)} style={xBtn}>✕</button>
+              <button onClick={() => setViewItem(null)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 20 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 
 const EMPTY = { supplierId: "", productId: "", quantity: 1, purchasePrice: 0, total: 0, date: new Date().toISOString().split("T")[0] };
 
@@ -66,13 +67,14 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
         </div>
         <div style={{ overflowX: "auto" }}>
           <table>
-            <thead><tr><th>Purchase ID</th><th>Supplier</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Date</th><th>Actions</th></tr></thead>
+            <thead><tr><th style={{ width: 48, textAlign: "center" }}>S.N</th><th>Purchase ID</th><th>Supplier</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Date</th><th>Actions</th></tr></thead>
             <tbody>
-              {filtered.map(p => {
+              {filtered.map((p, index) => {
                 const sup = suppliers.find(s => s.id === p.supplierId);
                 const prod = products.find(pr => pr.id === p.productId);
                 return (
                   <tr key={p.id}>
+                    <td style={{ textAlign: "center", color: "var(--muted-foreground)", fontWeight: 600, fontSize: "0.8rem", fontFamily: "JetBrains Mono" }}>{index + 1}</td>
                     <td className="mono" style={{ fontSize: "0.8rem", color: "var(--muted-foreground)" }}>{p.id}</td>
                     <td style={{ fontWeight: 500 }}>{sup?.name ?? p.supplierId}</td>
                     <td>{prod?.name ?? p.productId}</td>
@@ -99,7 +101,7 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
           <div style={mBox}>
             <div style={mHdr}>
               <strong style={{ fontFamily: "DM Sans" }}>{editing ? "Edit Purchase" : "Add Purchase"}</strong>
-              <button onClick={() => setShowModal(false)} style={xBtn}>✕</button>
+              <button onClick={() => setShowModal(false)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>

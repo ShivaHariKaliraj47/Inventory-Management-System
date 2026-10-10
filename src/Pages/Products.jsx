@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Plus, Search, Tag, Eye, Edit2, Trash2, X, Mail } from "lucide-react";
 import { getExpiryStatus } from "../data";
+import NotifySupplierModal from "../Components/NotifySupplierModal";
 
 function Modal({ title, onClose, children }) {
   return (
@@ -7,7 +9,9 @@ function Modal({ title, onClose, children }) {
       <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
         <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
           <h3 style={{ margin: 0, fontFamily: "DM Sans", fontSize: "1rem", fontWeight: 700 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--muted-foreground)" }}>✕</button>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted-foreground)", display: "flex", alignItems: "center", padding: 4 }}>
+            <X size={18} />
+          </button>
         </div>
         <div style={{ padding: "20px 22px" }}>{children}</div>
       </div>
@@ -37,6 +41,8 @@ export default function Products({ products, setProducts, categories, suppliers 
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [viewProduct, setViewProduct] = useState(null);
+  const [notifyTarget, setNotifyTarget] = useState(null);
+  const [notifiedMap, setNotifiedMap] = useState({});
 
   const openAdd = () => { setEditing(null); setForm(EMPTY); setShowModal(true); };
   const openEdit = (p) => { setEditing(p); setForm({ ...p }); setShowModal(true); };
@@ -72,25 +78,29 @@ export default function Products({ products, setProducts, categories, suppliers 
           <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>Products</h2>
           <p style={{ margin: "3px 0 0", color: "var(--muted-foreground)", fontSize: "0.82rem" }}>{products.length} products across {categories.length} categories</p>
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products…"
-            style={{ padding: "8px 13px", border: "1px solid var(--border)", borderRadius: 8, fontSize: "0.84rem", outline: "none", width: 200 }} />
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <Search size={15} style={{ position: "absolute", left: 10, color: "var(--muted-foreground)", pointerEvents: "none" }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products…"
+              style={{ padding: "8px 12px 8px 32px", border: "1px solid var(--border)", borderRadius: 8, fontSize: "0.84rem", outline: "none", width: 200, background: "#fff" }} />
+          </div>
           <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
             style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8, fontSize: "0.84rem", outline: "none", background: "#fff" }}>
             <option value="">All Categories</option>
-            {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <button onClick={openAdd} style={{ padding: "8px 18px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>
-            + Add Product
+          <button onClick={openAdd} style={{ padding: "8px 16px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <Plus size={16} /> Add Product
           </button>
         </div>
       </div>
 
       <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ minWidth: 900 }}>
+          <table style={{ minWidth: 920 }}>
             <thead>
               <tr>
+                <th style={{ width: 48, textAlign: "center" }}>S.N</th>
                 <th>Product</th>
                 <th>Category</th>
                 <th>Batch / Expiry</th>
@@ -102,18 +112,25 @@ export default function Products({ products, setProducts, categories, suppliers 
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => {
+              {filtered.map((p, index) => {
                 const cat = categories.find(c => c.id === p.categoryId);
                 const expiry = getExpiryStatus(p.expiryDate);
                 const stockLow = p.quantity > 0 && p.quantity <= p.reorderLevel;
                 return (
                   <tr key={p.id}>
+                    <td style={{ textAlign: "center", color: "var(--muted-foreground)", fontWeight: 600, fontSize: "0.8rem", fontFamily: "JetBrains Mono" }}>
+                      {index + 1}
+                    </td>
                     <td>
                       <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{p.name}</div>
                       <div style={{ fontSize: "0.69rem", color: "var(--muted-foreground)", fontFamily: "JetBrains Mono" }}>{p.id}</div>
                     </td>
                     <td>
-                      {cat ? <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.8rem" }}>{cat.icon} {cat.name}</span> : "—"}
+                      {cat ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "0.78rem", fontWeight: 500, color: "#334155", background: "#f1f5f9", padding: "3px 8px", borderRadius: 6 }}>
+                          <Tag size={12} style={{ color: "var(--primary)" }} /> {cat.name}
+                        </span>
+                      ) : "—"}
                     </td>
                     <td>
                       <div style={{ fontSize: "0.75rem", fontFamily: "JetBrains Mono", color: "#374151" }}>{p.batchNo || "—"}</div>
@@ -137,16 +154,47 @@ export default function Products({ products, setProducts, categories, suppliers 
                     </td>
                     <td style={{ textAlign: "right" }}>
                       <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                        <button onClick={() => setViewProduct(p)} style={{ padding: "5px 10px", border: "1px solid var(--border)", borderRadius: 6, background: "#f8fafc", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600 }}>View</button>
-                        <button onClick={() => openEdit(p)} style={{ padding: "5px 10px", border: "1px solid #bae6fd", borderRadius: 6, background: "#e0f2fe", color: "#0369a1", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600 }}>Edit</button>
-                        <button onClick={() => del(p.id)} style={{ padding: "5px 10px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fee2e2", color: "#b91c1c", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600 }}>Del</button>
+                        {(stockLow || p.quantity === 0) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const sup = suppliers.find(s => s.id === p.supplierId);
+                              setNotifyTarget({ product: p, supplier: sup });
+                            }}
+                            style={{
+                              padding: "5px 9px",
+                              border: notifiedMap[p.id] ? "1px solid #86efac" : "1px solid #fed7aa",
+                              borderRadius: 6,
+                              background: notifiedMap[p.id] ? "#dcfce7" : "#fff7ed",
+                              color: notifiedMap[p.id] ? "#15803d" : "#c2410c",
+                              cursor: "pointer",
+                              fontSize: "0.72rem",
+                              fontWeight: 600,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                            title="Manual replenishment notification to supplier"
+                          >
+                            <Mail size={12} /> {notifiedMap[p.id] ? "Notified" : "Notify"}
+                          </button>
+                        )}
+                        <button onClick={() => setViewProduct(p)} style={{ padding: "5px 9px", border: "1px solid var(--border)", borderRadius: 6, background: "#f8fafc", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <Eye size={12} /> View
+                        </button>
+                        <button onClick={() => openEdit(p)} style={{ padding: "5px 9px", border: "1px solid #bae6fd", borderRadius: 6, background: "#e0f2fe", color: "#0369a1", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <Edit2 size={12} /> Edit
+                        </button>
+                        <button onClick={() => del(p.id)} style={{ padding: "5px 9px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fee2e2", color: "#b91c1c", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <Trash2 size={12} /> Del
+                        </button>
                       </div>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: 40, color: "var(--muted-foreground)" }}>No products found.</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: 40, color: "var(--muted-foreground)" }}>No products found.</td></tr>
               )}
             </tbody>
           </table>
@@ -164,13 +212,13 @@ export default function Products({ products, setProducts, categories, suppliers 
               </div>
               <Fld label="Category *">
                 <select value={form.categoryId} onChange={e => f("categoryId", e.target.value)} style={inp}>
-                  <option value="">Select…</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                  <option value="">Select category…</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </Fld>
               <Fld label="Supplier *">
                 <select value={form.supplierId} onChange={e => f("supplierId", e.target.value)} style={inp}>
-                  <option value="">Select…</option>
+                  <option value="">Select supplier…</option>
                   {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </Fld>
@@ -243,6 +291,16 @@ export default function Products({ products, setProducts, categories, suppliers 
             })()}
           </div>
         </Modal>
+      )}
+
+      {/* Manual Notify Supplier Modal */}
+      {notifyTarget && (
+        <NotifySupplierModal
+          product={notifyTarget.product}
+          supplier={notifyTarget.supplier}
+          onClose={() => setNotifyTarget(null)}
+          onSent={(pid) => setNotifiedMap(m => ({ ...m, [pid]: true }))}
+        />
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getExpiryStatus } from "../data";
+import { AlertTriangle, CheckCircle2, Tag, X } from "lucide-react";
 
 const TABS = [
   { key: "expired", label: "Expired",         color: "#b91c1c", bg: "#fee2e2", border: "#fca5a5" },
@@ -17,7 +18,7 @@ export default function ExpiryManagement({ products, setProducts, categories }) 
     .map(p => {
       const s = getExpiryStatus(p.expiryDate);
       const cat = categories.find(c => c.id === p.categoryId);
-      return { ...p, expiryInfo: s, catName: cat?.name ?? "—", catIcon: cat?.icon ?? "📦" };
+      return { ...p, expiryInfo: s, catName: cat?.name ?? "—" };
     })
     .filter(p => p.expiryInfo);
 
@@ -75,7 +76,11 @@ export default function ExpiryManagement({ products, setProducts, categories }) 
         <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
           <input value={searchQ} onChange={e => setSearchQ(e.target.value)} placeholder="Search by product name or batch no…"
             style={{ padding: "7px 12px", border: "1px solid var(--border)", borderRadius: 7, fontSize: "0.84rem", outline: "none", width: 280 }} />
-          {searchQ && <button onClick={() => setSearchQ("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted-foreground)", fontSize: "0.8rem" }}>Clear ✕</button>}
+          {searchQ && (
+            <button onClick={() => setSearchQ("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted-foreground)", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: 4 }}>
+              Clear <X size={13} />
+            </button>
+          )}
           <div style={{ marginLeft: "auto", fontSize: "0.8rem", color: "var(--muted-foreground)" }}>
             {filtered.length} product{filtered.length !== 1 ? "s" : ""}
           </div>
@@ -83,24 +88,28 @@ export default function ExpiryManagement({ products, setProducts, categories }) 
 
         {/* Table */}
         {activeTab === "expired" && (
-          <div style={{ padding: "10px 16px 12px", background: activeTabCfg.bg, borderBottom: "1px solid var(--border)" }}>
+          <div style={{ padding: "10px 16px 12px", background: activeTabCfg.bg, borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+            <AlertTriangle size={15} color={activeTabCfg.color} style={{ flexShrink: 0 }} />
             <p style={{ margin: 0, fontSize: "0.78rem", color: activeTabCfg.color, fontWeight: 600 }}>
-              ⚠ Expired products are automatically blocked from new sales. Use "Write Off" to zero out stock and record the loss.
+              Expired products are automatically blocked from new sales. Use "Write Off" to zero out stock and record the loss.
             </p>
           </div>
         )}
 
         {filtered.length === 0 ? (
           <div style={{ padding: "48px", textAlign: "center", color: "var(--muted-foreground)" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>✅</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+              <CheckCircle2 size={36} color="#16a34a" />
+            </div>
             <p style={{ fontWeight: 600, marginBottom: 4 }}>No products in this category</p>
             <p style={{ fontSize: "0.8rem", margin: 0 }}>{activeTab === "expired" ? "Great — nothing expired!" : "Nothing in this expiry window."}</p>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ minWidth: 700 }}>
+            <table style={{ minWidth: 750 }}>
               <thead>
                 <tr>
+                  <th style={{ width: 48, textAlign: "center" }}>S.N</th>
                   <th>Product</th>
                   <th>Category</th>
                   <th>Batch No.</th>
@@ -111,17 +120,19 @@ export default function ExpiryManagement({ products, setProducts, categories }) 
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(p => (
+                {filtered.map((p, index) => (
                   <tr key={p.id}>
+                    <td style={{ textAlign: "center", color: "var(--muted-foreground)", fontWeight: 600, fontSize: "0.8rem", fontFamily: "JetBrains Mono" }}>
+                      {index + 1}
+                    </td>
                     <td>
                       <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{p.name}</div>
                       <div style={{ fontSize: "0.69rem", color: "var(--muted-foreground)", fontFamily: "JetBrains Mono" }}>{p.id}</div>
                     </td>
                     <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span>{p.catIcon}</span>
-                        <span style={{ fontSize: "0.8rem" }}>{p.catName}</span>
-                      </div>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "0.78rem", fontWeight: 500, color: "#334155", background: "#f1f5f9", padding: "2px 8px", borderRadius: 6 }}>
+                        <Tag size={12} style={{ color: "var(--primary)" }} /> {p.catName}
+                      </span>
                     </td>
                     <td style={{ fontFamily: "JetBrains Mono", fontSize: "0.8rem", color: "#374151" }}>{p.batchNo || "—"}</td>
                     <td style={{ fontFamily: "JetBrains Mono", fontSize: "0.82rem" }}>

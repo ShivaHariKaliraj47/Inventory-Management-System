@@ -12,6 +12,8 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
+  ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "./supabase";
 
@@ -40,6 +42,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const clearMessages = () => { setError(""); setSuccess(""); };
   const reset = () => {
@@ -59,7 +62,14 @@ export default function Login() {
     setLoading(true);
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) setError(signInError.message);
+      if (signInError) {
+        if (signInError.message.toLowerCase().includes("email not confirmed")) {
+          setError("Your email has not been verified yet. Check Gmail or click Resend link.");
+          setTab("verify");
+        } else {
+          setError(signInError.message);
+        }
+      }
     } catch { setError("Unable to sign in. Please try again."); }
     finally { setLoading(false); }
   };
@@ -84,12 +94,39 @@ export default function Login() {
       });
       if (signUpError) { setError(signUpError.message); return; }
       if (!data.session) {
-        setTab("signin");
-        setPassword(""); setConfirmPass("");
-        setSuccess("Account created. Check Gmail for your verification link.");
+        // Verification email required - show dedicated verify screen
+        setTab("verify");
+        setPassword("");
+        setConfirmPass("");
+        setSuccess(`Verification link sent! Please check your Gmail (${email}).`);
       }
     } catch { setError("Unable to create your account. Please try again."); }
     finally { setLoading(false); }
+  };
+
+  const handleResend = async () => {
+    if (!email) {
+      setError("Please enter your email to resend.");
+      return;
+    }
+    clearMessages();
+    setResending(true);
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (resendError) {
+        setError(resendError.message);
+      } else {
+        setSuccess(`A fresh verification link has been sent to ${email}. Check your Gmail inbox and spam folder.`);
+      }
+    } catch {
+      setError("Could not resend verification email. Please try again.");
+    } finally {
+      setResending(false);
+    }
   };
 
   const handleForgot = async event => {
@@ -139,6 +176,7 @@ export default function Login() {
         <div className="auth-form-panel">
           <div className="auth-form-wrap">
             {success && <StatusBox type="success">{success}</StatusBox>}
+            {error && <StatusBox type="error">{error}</StatusBox>}
 
             {tab === "signin" && (
               <>
@@ -154,7 +192,6 @@ export default function Login() {
                     <label className="auth-check"><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Remember me</label>
                     <button className="auth-text-button" type="button" onClick={() => { clearMessages(); setTab("forgot"); }}>Forgot password?</button>
                   </div>
-                  {error && <StatusBox type="error">{error}</StatusBox>}
                   <SubmitButton loading={loading}>{loading ? "Signing in…" : "Login Now"}</SubmitButton>
                 </form>
                 <TrustRow />
@@ -184,11 +221,74 @@ export default function Login() {
                     <PasswordInput value={confirmPass} onChange={event => setConfirmPass(event.target.value)} show={showConfirm} onToggle={() => setShowConfirm(value => !value)} autoComplete="new-password" />
                   </Field>
                   <label className="auth-check auth-terms"><input type="checkbox" checked={agree} onChange={event => setAgree(event.target.checked)} /> I agree to the Terms and Conditions</label>
-                  {error && <StatusBox type="error">{error}</StatusBox>}
                   <SubmitButton loading={loading}>{loading ? "Creating account…" : "Create Account"}</SubmitButton>
                 </form>
                 <TrustRow />
               </>
+            )}
+
+            {tab === "verify" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ textAlign: "center", paddingTop: 8 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ccfbf1", color: "#0d9488", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                    <Mail size={26} />
+                  </div>
+                  <FormHeading title="Verify your Gmail" subtitle={`Verification link sent to ${email}`} />
+                </div>
+
+                <div style={{ background: "#f8fafc", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 16px", fontSize: "0.82rem", color: "#334155", lineHeight: 1.55 }}>
+                  <strong style={{ color: "#0f172a", display: "block", marginBottom: 6 }}>How to verify your permission:</strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <div>1. Open your <strong>Gmail inbox</strong> ({email}).</div>
+                    <div>2. Click the <strong>Confirm your email</strong> link in the message.</div>
+                    <div>3. You will be verified and redirected straight into your dashboard!</div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <a
+                    href="https://mail.google.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="auth-submit"
+                    style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 16px" }}
+                  >
+                    <ExternalLink size={16} /> Open Gmail
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resending}
+                    style={{
+                      width: "100%",
+                      padding: "10px 16px",
+                      borderRadius: "var(--radius)",
+                      border: "1.5px solid var(--border)",
+                      background: "#fff",
+                      fontSize: "0.84rem",
+                      fontWeight: 600,
+                      cursor: resending ? "wait" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      color: "#334155",
+                    }}
+                  >
+                    <RefreshCw size={14} />
+                    {resending ? "Sending fresh link…" : "Resend Verification Link"}
+                  </button>
+
+                  <p style={{ margin: "4px 0 0", textAlign: "center", fontSize: "0.74rem", color: "var(--muted-foreground)" }}>
+                    Don't see it? Please check your <strong>Spam</strong> or <strong>Promotions</strong> folder.
+                  </p>
+
+                  <div style={{ textAlign: "center", paddingTop: 4 }}>
+                    <BackButton onClick={() => changeTab("signin")}>Back to sign in</BackButton>
+                  </div>
+                </div>
+              </div>
             )}
 
             {tab === "forgot" && (
@@ -198,7 +298,6 @@ export default function Login() {
                   <Field label="Gmail address" icon={Mail}>
                     <AuthInput type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="name@gmail.com" autoComplete="email" required />
                   </Field>
-                  {error && <StatusBox type="error">{error}</StatusBox>}
                   <SubmitButton loading={loading} icon={Send}>{loading ? "Sending…" : "Send Reset Link"}</SubmitButton>
                   <BackButton onClick={() => changeTab("signin")}>Back to sign in</BackButton>
                 </form>
@@ -216,7 +315,6 @@ export default function Login() {
                   <Field label="Confirm password" icon={ShieldCheck}>
                     <PasswordInput value={confirmPass} onChange={event => setConfirmPass(event.target.value)} show={showConfirm} onToggle={() => setShowConfirm(value => !value)} autoComplete="new-password" />
                   </Field>
-                  {error && <StatusBox type="error">{error}</StatusBox>}
                   <SubmitButton loading={loading}>{loading ? "Saving…" : "Save New Password"}</SubmitButton>
                   <BackButton onClick={() => { window.history.replaceState({}, "", "/"); setTab("forgot"); clearMessages(); }}>Request another link</BackButton>
                 </form>

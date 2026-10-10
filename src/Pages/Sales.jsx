@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getExpiryStatus } from "../data";
+import { AlertTriangle, Clock, X, Check } from "lucide-react";
 
 const EMPTY = { productId: "", quantity: 1, sellingPrice: 0, total: 0, date: new Date().toISOString().split("T")[0], customer: "" };
 
@@ -73,16 +74,17 @@ export default function Sales({ sales, setSales, products, setProducts }) {
           <table>
             <thead>
               <tr>
-                <th>Sale ID</th><th>Product</th><th>Customer</th>
+                <th style={{ width: 48, textAlign: "center" }}>S.N</th><th>Sale ID</th><th>Product</th><th>Customer</th>
                 <th>Qty</th><th>Unit Price</th><th>Total</th><th>Date</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(s => {
+              {filtered.map((s, index) => {
                 const prod = products.find(p => p.id === s.productId);
                 const hasCustomer = s.customer && s.customer.trim() !== "";
                 return (
                   <tr key={s.id}>
+                    <td style={{ textAlign: "center", color: "var(--muted-foreground)", fontWeight: 600, fontSize: "0.8rem", fontFamily: "JetBrains Mono" }}>{index + 1}</td>
                     <td className="mono" style={{ fontSize: "0.78rem", color: "var(--muted-foreground)" }}>{s.id}</td>
                     <td style={{ fontWeight: 500 }}>{prod?.name ?? s.productId}</td>
                     <td>
@@ -120,7 +122,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
           <div style={mBox}>
             <div style={mHdr}>
               <strong style={{ fontFamily: "DM Sans", fontSize: "1rem" }}>Create New Sale</strong>
-              <button onClick={() => setShowModal(false)} style={xBtn}>✕</button>
+              <button onClick={() => setShowModal(false)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -136,7 +138,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                       return exp?.status !== "expired" && exp?.status !== "today";
                     }).map(p => {
                       const exp = getExpiryStatus(p.expiryDate);
-                      const warn = exp?.status === "near" ? " ⚠ Near Expiry" : exp?.status === "soon" ? " ⏳ Exp Soon" : "";
+                      const warn = exp?.status === "near" ? " (Near Expiry)" : exp?.status === "soon" ? " (Exp Soon)" : "";
                       return <option key={p.id} value={p.id}>{p.name} (Stock: {p.quantity}){warn}</option>;
                     })}
                   </select>
@@ -151,8 +153,8 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                 </Fld>
                 {form.productId && (() => {
                   const exp = getExpiryStatus(products.find(p => p.id === form.productId)?.expiryDate);
-                  if (exp?.status === "near") return <div style={{ gridColumn: "1/-1", padding: "8px 12px", background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, fontSize: "0.78rem", color: "#a16207", fontWeight: 600 }}>⚠ This product {exp.label} — sell quickly.</div>;
-                  if (exp?.status === "soon") return <div style={{ gridColumn: "1/-1", padding: "8px 12px", background: "#ccfbf1", border: "1px solid #5eead4", borderRadius: 8, fontSize: "0.78rem", color: "#0f766e", fontWeight: 600 }}>⏳ {exp.label} — consider selling soon.</div>;
+                  if (exp?.status === "near") return <div style={{ gridColumn: "1/-1", padding: "8px 12px", background: "#fef9c3", border: "1px solid #fde047", borderRadius: 8, fontSize: "0.78rem", color: "#a16207", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><AlertTriangle size={14} color="#a16207" /> This product {exp.label} — sell quickly.</div>;
+                  if (exp?.status === "soon") return <div style={{ gridColumn: "1/-1", padding: "8px 12px", background: "#ccfbf1", border: "1px solid #5eead4", borderRadius: 8, fontSize: "0.78rem", color: "#0f766e", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}><Clock size={14} color="#0f766e" /> {exp.label} — consider selling soon.</div>;
                   return null;
                 })()}
                 <Fld label="Quantity">
@@ -185,13 +187,13 @@ export default function Sales({ sales, setSales, products, setProducts }) {
           <div style={{ ...mBox, maxWidth: 400 }}>
             <div style={mHdr}>
               <strong style={{ fontFamily: "DM Sans" }}>Tax Invoice</strong>
-              <button onClick={() => setInvoice(null)} style={xBtn}>✕</button>
+              <button onClick={() => setInvoice(null)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 26 }}>
               <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: 10,
-                  background: "#c8963e",
+                  background: "var(--primary)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   margin: "0 auto 10px",
                 }}>
@@ -223,8 +225,8 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                 </div>
               </div>
 
-              <div style={{ textAlign: "center", marginTop: 18, padding: "10px", background: "#d1f5e4", borderRadius: 9, color: "#1a6b44", fontSize: "0.8rem", fontWeight: 600 }}>
-                ✓ Thank you for your purchase!
+              <div style={{ textAlign: "center", marginTop: 18, padding: "10px", background: "#d1f5e4", borderRadius: 9, color: "#1a6b44", fontSize: "0.8rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <Check size={16} /> Thank you for your purchase!
               </div>
               <button onClick={() => setInvoice(null)} style={{ ...saveBtn, width: "100%", marginTop: 16 }}>Close Invoice</button>
             </div>

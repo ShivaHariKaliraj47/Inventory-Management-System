@@ -1,34 +1,41 @@
 import { useState, useRef, useEffect } from "react";
-import { Calculator as CalculatorIcon } from "lucide-react";
-import { Settings as SettingsIcon } from "lucide-react";
+import {
+  Home,
+  Package,
+  Tag,
+  Truck,
+  ShoppingCart,
+  TrendingUp,
+  BarChart3,
+  ClipboardList,
+  Clock,
+  Settings as SettingsIcon,
+  Calculator as CalculatorIcon,
+  Search,
+  Bell,
+  ChevronDown,
+  LogOut,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  DollarSign,
+} from "lucide-react";
 import Calculator from "./Calculator";
 import { getExpiryStatus } from "../data";
-import {
-  IconHome, IconBox, IconTag, IconTruck, IconCart,
-  IconDollar, IconBarChart, IconClipboard,
-  IconBell, IconSearch, IconLogout, IconChevron,
-} from "./Icons";
 
 const NAV_ITEMS = [
-  { key: "dashboard",  label: "Dashboard",        Icon: IconHome },
-  { key: "products",   label: "Products",         Icon: IconBox },
-  { key: "categories", label: "Categories",       Icon: IconTag },
-  { key: "suppliers",  label: "Suppliers",        Icon: IconTruck },
-  { key: "purchases",  label: "Purchases",        Icon: IconCart },
-  { key: "sales",      label: "Sales",            Icon: IconDollar },
-  { key: "stock",      label: "Stock Records",    Icon: IconBarChart },
-  { key: "reports",    label: "Reports",          Icon: IconClipboard },
-  { key: "expiry",     label: "Expiry Mgmt",      Icon: ExpiryIcon },
+  { key: "dashboard",  label: "Dashboard",        Icon: Home },
+  { key: "products",   label: "Products",         Icon: Package },
+  { key: "categories", label: "Categories",       Icon: Tag },
+  { key: "suppliers",  label: "Suppliers",        Icon: Truck },
+  { key: "purchases",  label: "Purchases",        Icon: ShoppingCart },
+  { key: "sales",      label: "Sales",            Icon: TrendingUp },
+  { key: "stock",      label: "Stock Records",    Icon: BarChart3 },
+  { key: "reports",    label: "Reports",          Icon: ClipboardList },
+  { key: "expiry",     label: "Expiry Mgmt",      Icon: Clock },
   { key: "settings",   label: "Settings",         Icon: SettingsIcon },
 ];
-
-function ExpiryIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  );
-}
 
 export default function Layout({ currentPage, setCurrentPage, currentUser, onLogout, children, shared }) {
   const [showNotifs, setShowNotifs] = useState(false);
@@ -68,17 +75,17 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
       .slice(0, 4).map(p => ({ type: "product", label: p.name, sub: `Product · ₹${p.sellingPrice} · Qty: ${p.quantity}`, page: "products" })),
     ...(categories || []).filter(c => c.name.toLowerCase().includes(q))
       .slice(0, 3).map(c => ({ type: "category", label: c.name, sub: `Category`, page: "categories" })),
-    ...(suppliers || []).filter(s => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q))
-      .slice(0, 3).map(s => ({ type: "supplier", label: s.name, sub: `Supplier · ${s.email}`, page: "suppliers" })),
-    ...(sales || []).filter(s => s.id.toLowerCase().includes(q) || (s.customer && s.customer.toLowerCase().includes(q)))
-      .slice(0, 3).map(s => {
-        const prod = (products || []).find(p => p.id === s.productId);
-        return { type: "sale", label: s.id + (s.customer ? ` — ${s.customer}` : ""), sub: `Sale · ${prod?.name} · ₹${s.total}`, page: "sales" };
-      }),
+    ...(suppliers || []).filter(s => s.name.toLowerCase().includes(q))
+      .slice(0, 3).map(s => ({ type: "supplier", label: s.name, sub: `Supplier · ${s.contact}`, page: "suppliers" })),
+    ...(sales || []).filter(s => s.id.toLowerCase().includes(q) || s.customer?.toLowerCase().includes(q))
+      .slice(0, 3).map(s => ({ type: "sale", label: `${s.id} — ${s.customer || "Walk-in"}`, sub: `Sale · ₹${s.total}`, page: "sales" })),
   ] : [];
 
+  // Close search on outside click
   useEffect(() => {
-    const handler = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearch(false); };
+    const handler = e => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearch(false);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
@@ -87,22 +94,27 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
   const displayName = currentUser.fullName || currentUser.email.split("@")[0];
 
   const typeColors = { product: "#0d9488", category: "#3b82f6", supplier: "#8b5cf6", sale: "#22c55e" };
-  const typeIcons  = { product: "📦", category: "🏷️", supplier: "🚚", sale: "💰" };
+  const typeIcons  = {
+    product: <Package size={15} color="#0d9488" />,
+    category: <Tag size={15} color="#3b82f6" />,
+    supplier: <Truck size={15} color="#8b5cf6" />,
+    sale: <DollarSign size={15} color="#22c55e" />,
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)" }}>
 
       {/* ── Sidebar ── */}
       <aside style={{
-        width: sidebarOpen ? 230 : 58,
+        width: sidebarOpen ? 230 : 62,
         background: "var(--sidebar)",
         display: "flex", flexDirection: "column",
         transition: "width 0.25s ease",
         overflow: "hidden", flexShrink: 0, zIndex: 20,
       }}>
         {/* Logo */}
-        <div style={{ padding: sidebarOpen ? "18px 16px" : "18px 11px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.06)", minHeight: 64 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ padding: sidebarOpen ? "18px 16px" : "18px 12px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.06)", minHeight: 64 }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 6px rgba(13,148,136,0.4)" }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
             </svg>
@@ -116,28 +128,45 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: "10px 7px", overflowY: "auto" }}>
+        <nav style={{ flex: 1, padding: "12px 7px", overflowY: "auto" }}>
           {NAV_ITEMS.map(({ key, label, Icon }) => {
             const active = currentPage === key;
             const isExpiry = key === "expiry";
             return (
               <button key={key} onClick={() => setCurrentPage(key)} title={!sidebarOpen ? label : undefined}
                 style={{
-                  display: "flex", alignItems: "center", gap: 9,
-                  width: "100%", padding: sidebarOpen ? "9px 10px" : "9px 0",
+                  display: "flex", alignItems: "center", gap: 10,
+                  width: "100%", padding: sidebarOpen ? "7px 10px" : "7px 0",
                   justifyContent: sidebarOpen ? "flex-start" : "center",
-                  borderRadius: 7, border: "none", cursor: "pointer", marginBottom: 1,
-                  background: active ? "var(--sidebar-active-bg)" : "transparent",
-                  color: active ? "#fff" : isExpiry && !active ? "#fb923c" : "var(--sidebar-foreground)",
-                  fontFamily: "Inter", fontSize: "0.84rem", fontWeight: active ? 600 : 400,
-                  textAlign: "left", transition: "all 0.15s", whiteSpace: "nowrap",
+                  borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 3,
+                  background: active ? "rgba(13, 148, 136, 0.18)" : "transparent",
+                  color: active ? "#ffffff" : isExpiry && !active ? "#fdba74" : "var(--sidebar-foreground)",
+                  fontFamily: "Inter", fontSize: "0.84rem", fontWeight: active ? 600 : 500,
+                  textAlign: "left", transition: "all 0.15s ease", whiteSpace: "nowrap",
                 }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = "var(--sidebar-hover)"; }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
               >
-                <span style={{ flexShrink: 0, opacity: active ? 1 : 0.8 }}><Icon /></span>
+                {/* Circular Icon Disc matching the reference image */}
+                <span style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: active ? "var(--primary)" : "#374151",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  flexShrink: 0,
+                  boxShadow: active
+                    ? "0 2px 8px rgba(13, 148, 136, 0.55)"
+                    : "0 1px 3px rgba(0, 0, 0, 0.35)",
+                  transition: "all 0.18s ease",
+                }}>
+                  <Icon size={16} strokeWidth={2.2} />
+                </span>
                 {sidebarOpen && (
-                  <span style={{ flex: 1 }}>{label}</span>
+                  <span style={{ flex: 1, letterSpacing: "-0.01em" }}>{label}</span>
                 )}
                 {sidebarOpen && isExpiry && expiryAlerts.length > 0 && (
                   <span style={{ background: "#ef4444", color: "#fff", fontSize: "0.62rem", fontWeight: 700, padding: "1px 6px", borderRadius: 99, minWidth: 18, textAlign: "center" }}>
@@ -163,7 +192,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
         )}
 
         <button onClick={() => setSidebarOpen(o => !o)}
-          style={{ margin: "0 7px 9px", padding: "7px", borderRadius: 7, border: "none", background: "rgba(255,255,255,0.05)", color: "#475569", cursor: "pointer", fontSize: "0.72rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, transition: "background 0.15s" }}
+          style={{ margin: "0 7px 9px", padding: "7px", borderRadius: 7, border: "none", background: "rgba(255,255,255,0.05)", color: "#94a3b8", cursor: "pointer", fontSize: "0.72rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, transition: "background 0.15s" }}
           onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
           onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
         >
@@ -180,18 +209,24 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
         <header style={{ height: 56, background: "#fff", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", padding: "0 20px", gap: 12, flexShrink: 0, zIndex: 10 }}>
           {/* Global Search */}
           <div ref={searchRef} style={{ flex: 1, maxWidth: 420, position: "relative" }}>
-            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted-foreground)" }}>
-              <IconSearch />
+            <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted-foreground)", display: "flex", alignItems: "center" }}>
+              <Search size={15} />
             </span>
             <input
               value={searchQ}
               onChange={e => { setSearchQ(e.target.value); setShowSearch(true); }}
               onFocus={() => setShowSearch(true)}
-              placeholder="Search products, sales, suppliers, categories…"
-              style={{ width: "100%", padding: "7px 12px 7px 34px", border: "1.5px solid var(--border)", borderRadius: 8, background: "var(--muted)", outline: "none", fontSize: "0.8rem", boxSizing: "border-box", transition: "border 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "var(--primary)"}
-              onMouseLeave={e => { if (document.activeElement !== e.currentTarget) e.currentTarget.style.borderColor = "var(--border)"; }}
+              placeholder="Search products, suppliers, sales… (min 2 chars)"
+              style={{
+                width: "100%", padding: "7px 12px 7px 32px",
+                border: "1.5px solid var(--border)", borderRadius: 8,
+                background: "var(--muted)", fontSize: "0.82rem",
+                outline: "none", boxSizing: "border-box", transition: "border 0.15s",
+              }}
+              onFocusCapture={e => e.target.style.borderColor = "var(--primary)"}
+              onBlurCapture={e => e.target.style.borderColor = "var(--border)"}
             />
+            {/* Search Dropdown */}
             {showSearch && searchResults.length > 0 && (
               <div style={{ position: "absolute", top: 38, left: 0, right: 0, background: "#fff", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 300, overflow: "hidden", maxHeight: 340, overflowY: "auto" }}>
                 {searchResults.map((r, i) => (
@@ -200,7 +235,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
                     onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <span style={{ fontSize: "1rem", marginTop: 1 }}>{typeIcons[r.type]}</span>
+                    <span style={{ marginTop: 2 }}>{typeIcons[r.type]}</span>
                     <div>
                       <div style={{ fontSize: "0.84rem", fontWeight: 500 }}>{r.label}</div>
                       <div style={{ fontSize: "0.7rem", color: typeColors[r.type], marginTop: 1 }}>{r.sub}</div>
@@ -223,7 +258,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
             <button type="button" aria-label="Open calculator" aria-expanded={showCalculator} title="Calculator"
               onClick={() => { setShowCalculator(open => !open); setShowNotifs(false); setShowUserMenu(false); }}
               style={{ ...iconBtnStyle, color: showCalculator ? "var(--primary)" : "var(--muted-foreground)" }}>
-              <CalculatorIcon size={18} strokeWidth={1.8} />
+              <CalculatorIcon size={17} strokeWidth={1.9} />
             </button>
             {showCalculator && (
               <DropMenu width={290} onClose={() => setShowCalculator(false)}>
@@ -236,9 +271,9 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
           <div style={{ position: "relative" }}>
             <button onClick={() => { setShowNotifs(n => !n); setShowUserMenu(false); setShowCalculator(false); }}
               style={{ ...iconBtnStyle, position: "relative" }}>
-              <IconBell />
+              <Bell size={17} strokeWidth={1.9} />
               {notifications.length > 0 && (
-                <span style={{ position: "absolute", top: 5, right: 5, width: 7, height: 7, borderRadius: "50%", background: "#ef4444", border: "1.5px solid #fff" }} />
+                <span style={{ position: "absolute", top: 4, right: 4, width: 7, height: 7, borderRadius: "50%", background: "#ef4444", border: "1.5px solid #fff" }} />
               )}
             </button>
             {showNotifs && (
@@ -247,17 +282,19 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
                   <span style={{ fontWeight: 700, fontSize: "0.875rem", fontFamily: "DM Sans" }}>Notifications</span>
                   <span className="badge badge-red">{notifications.length}</span>
                 </div>
-                {notifications.map(n => (
-                  <div key={n.id} style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 10 }}>
-                    <span style={{ fontSize: "0.9rem", marginTop: 1 }}>
-                      {n.type === "danger" ? "🔴" : n.type === "warning" ? "🟡" : n.type === "success" ? "🟢" : "🔵"}
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "0.79rem", lineHeight: 1.45 }}>{n.text}</div>
-                      <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", marginTop: 2 }}>{n.time}</div>
+                {notifications.map(n => {
+                  const NotifIcon = n.type === "danger" ? AlertCircle : n.type === "warning" ? AlertTriangle : n.type === "success" ? CheckCircle2 : Info;
+                  const notifColor = n.type === "danger" ? "#b91c1c" : n.type === "warning" ? "#d97706" : n.type === "success" ? "#16a34a" : "#2563eb";
+                  return (
+                    <div key={n.id} style={{ padding: "10px 16px", borderBottom: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <NotifIcon size={16} color={notifColor} style={{ marginTop: 2, flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: "0.79rem", lineHeight: 1.45 }}>{n.text}</div>
+                        <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", marginTop: 2 }}>{n.time}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </DropMenu>
             )}
           </div>
@@ -274,7 +311,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
                 <div style={{ fontSize: "0.78rem", fontWeight: 600, whiteSpace: "nowrap" }}>{displayName}</div>
                 <div style={{ fontSize: "0.63rem", color: "var(--muted-foreground)" }}>Admin</div>
               </div>
-              <span style={{ color: "var(--muted-foreground)" }}><IconChevron /></span>
+              <span style={{ color: "var(--muted-foreground)", display: "flex", alignItems: "center" }}><ChevronDown size={14} /></span>
             </button>
             {showUserMenu && (
               <DropMenu width={190} onClose={() => setShowUserMenu(false)}>
@@ -287,7 +324,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
                   onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                 >
-                  <IconLogout /> Logout
+                  <LogOut size={15} /> Logout
                 </button>
               </DropMenu>
             )}
@@ -302,7 +339,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
   );
 }
 
-const iconBtnStyle = { width: 34, height: 34, borderRadius: 8, border: "1.5px solid var(--border)", background: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-foreground)", transition: "border 0.15s" };
+const iconBtnStyle = { width: 34, height: 34, borderRadius: "50%", border: "1.5px solid var(--border)", background: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-foreground)", transition: "all 0.15s" };
 
 function DropMenu({ children, width, onClose }) {
   return (

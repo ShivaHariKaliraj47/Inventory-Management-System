@@ -1,3 +1,5 @@
+import { DollarSign, ShoppingCart, TrendingUp, BarChart3 } from "lucide-react";
+
 export default function Reports({ products, categories, suppliers, purchases, sales }) {
   const totalRevenue = sales.reduce((s, x) => s + x.total, 0);
   const totalCost = purchases.reduce((s, x) => s + x.total, 0);
@@ -40,17 +42,22 @@ export default function Reports({ products, categories, suppliers, purchases, sa
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {[
-          { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, color: "#22c55e", icon: "💰" },
-          { label: "Total Cost", value: `₹${totalCost.toLocaleString()}`, color: "#ef4444", icon: "🛒" },
-          { label: "Gross Profit", value: `₹${grossProfit.toLocaleString()}`, color: grossProfit >= 0 ? "#4f46e5" : "#ef4444", icon: "📈" },
-          { label: "Profit Margin", value: `${margin}%`, color: "#f59e0b", icon: "📊" },
-        ].map(s => (
-          <div key={s.label} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 18px" }}>
-            <div style={{ fontSize: "1.4rem", marginBottom: 8 }}>{s.icon}</div>
-            <div style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color, fontFamily: "DM Sans" }}>{s.value}</div>
-          </div>
-        ))}
+          { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, color: "#16a34a", bg: "#f0fdf4", Icon: DollarSign },
+          { label: "Total Cost", value: `₹${totalCost.toLocaleString()}`, color: "#dc2626", bg: "#fef2f2", Icon: ShoppingCart },
+          { label: "Gross Profit", value: `₹${grossProfit.toLocaleString()}`, color: grossProfit >= 0 ? "#4f46e5" : "#dc2626", bg: "#eef2ff", Icon: TrendingUp },
+          { label: "Profit Margin", value: `${margin}%`, color: "#d97706", bg: "#fffbeb", Icon: BarChart3 },
+        ].map(s => {
+          const IconComponent = s.Icon;
+          return (
+            <div key={s.label} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, padding: "20px 18px" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", color: s.color, marginBottom: 12 }}>
+                <IconComponent size={20} />
+              </div>
+              <div style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{s.label}</div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color, fontFamily: "DM Sans" }}>{s.value}</div>
+            </div>
+          );
+        })}
       </div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
@@ -59,14 +66,14 @@ export default function Reports({ products, categories, suppliers, purchases, sa
         </div>
         <div style={{ overflowX: "auto" }}>
           <table>
-            <thead><tr><th>#</th><th>Product</th><th>Category</th><th>Qty Sold</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead>
+            <thead><tr><th style={{ width: 48, textAlign: "center" }}>S.N</th><th>Product</th><th>Category</th><th>Qty Sold</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead>
             <tbody>
               {productReport.map((r, i) => {
                 const profit = r.salesRevenue - r.purchaseCost;
                 const marg = r.salesRevenue > 0 ? ((profit / r.salesRevenue) * 100).toFixed(1) : "0";
                 return (
                   <tr key={r.product.id}>
-                    <td style={{ color: "var(--muted-foreground)", fontSize: "0.8rem" }}>{i + 1}</td>
+                    <td style={{ textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.8rem", fontFamily: "JetBrains Mono" }}>{i + 1}</td>
                     <td style={{ fontWeight: 500 }}>{r.product.name}</td>
                     <td><span className="badge badge-blue">{r.category}</span></td>
                     <td className="mono">{r.salesQty}</td>
@@ -87,36 +94,40 @@ export default function Reports({ products, categories, suppliers, purchases, sa
           <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
             <strong style={{ fontFamily: "DM Sans" }}>Sales by Category</strong>
           </div>
-          <table>
-            <thead><tr><th>Category</th><th>Units Sold</th><th>Revenue</th></tr></thead>
-            <tbody>
-              {catReport.map(r => (
-                <tr key={r.category.id}>
-                  <td style={{ fontWeight: 500 }}>{r.category.name}</td>
-                  <td className="mono">{r.qty}</td>
-                  <td className="mono" style={{ fontWeight: 700, color: "#22c55e" }}>₹{r.revenue.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Category</th><th>Units Sold</th><th>Revenue</th></tr></thead>
+              <tbody>
+                {catReport.map(c => (
+                  <tr key={c.category.id}>
+                    <td style={{ fontWeight: 500 }}>{c.category.name}</td>
+                    <td className="mono">{c.qty}</td>
+                    <td className="mono" style={{ color: "var(--primary)", fontWeight: 600 }}>₹{c.revenue.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
-            <strong style={{ fontFamily: "DM Sans" }}>Supplier Purchase Report</strong>
+            <strong style={{ fontFamily: "DM Sans" }}>Supplier Order Summary</strong>
           </div>
-          <table>
-            <thead><tr><th>Supplier</th><th>Orders</th><th>Total Spent</th></tr></thead>
-            <tbody>
-              {supReport.map(r => (
-                <tr key={r.supplier.id}>
-                  <td style={{ fontWeight: 500 }}>{r.supplier.name}</td>
-                  <td className="mono">{r.orders}</td>
-                  <td className="mono" style={{ fontWeight: 700, color: "#4f46e5" }}>₹{r.total.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ overflowX: "auto" }}>
+            <table>
+              <thead><tr><th>Supplier</th><th>Orders Placed</th><th>Total Spend</th></tr></thead>
+              <tbody>
+                {supReport.map(s => (
+                  <tr key={s.supplier.id}>
+                    <td style={{ fontWeight: 500 }}>{s.supplier.name}</td>
+                    <td className="mono">{s.orders}</td>
+                    <td className="mono" style={{ color: "#ef4444", fontWeight: 600 }}>₹{s.total.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

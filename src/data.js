@@ -1,10 +1,10 @@
 export const initialCategories = [
-  { id: "C001", name: "Beverages", description: "Cold drinks, juices, water, and liquid refreshments", icon: "🥤" },
-  { id: "C002", name: "Snacks", description: "Chips, biscuits, namkeen and light food items", icon: "🍿" },
-  { id: "C003", name: "Dairy", description: "Milk, butter, cheese and dairy-based products", icon: "🥛" },
-  { id: "C004", name: "Grains", description: "Rice, wheat, pulses and cereal products", icon: "🌾" },
-  { id: "C005", name: "Condiments", description: "Sauces, spices, oils and seasonings", icon: "🫙" },
-  { id: "C006", name: "Personal Care", description: "Soaps, shampoos, skincare products", icon: "🧴" },
+  { id: "C001", name: "Beverages", description: "Cold drinks, juices, water, and liquid refreshments" },
+  { id: "C002", name: "Snacks", description: "Chips, biscuits, namkeen and light food items" },
+  { id: "C003", name: "Dairy", description: "Milk, butter, cheese and dairy-based products" },
+  { id: "C004", name: "Grains", description: "Rice, wheat, pulses and cereal products" },
+  { id: "C005", name: "Condiments", description: "Sauces, spices, oils and seasonings" },
+  { id: "C006", name: "Personal Care", description: "Soaps, shampoos, skincare products" },
 ];
 
 export const initialSuppliers = [
