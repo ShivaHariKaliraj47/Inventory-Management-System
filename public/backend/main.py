@@ -13,7 +13,7 @@ from sqlalchemy import select  # noqa: E402
 from auth import get_current_user_id  # noqa: E402
 from database import Base, SessionLocal, engine  # noqa: E402
 from email_service import send_low_stock_email  # noqa: E402
-from models import InventoryState, LowStockAlert  # noqa: E402
+from model import InventoryState, LowStockAlert  # noqa: E402
 
 
 class InventoryPayload(BaseModel):
