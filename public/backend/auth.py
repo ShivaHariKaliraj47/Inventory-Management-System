@@ -3,8 +3,8 @@ import os
 import httpx
 from fastapi import Header, HTTPException
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
-SUPABASE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+SUPABASE_URL = (os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")).rstrip("/")
+SUPABASE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "")
 
 
 async def get_current_user_id(authorization: str | None = Header(default=None)) -> str:
