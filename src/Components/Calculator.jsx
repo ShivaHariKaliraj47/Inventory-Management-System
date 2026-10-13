@@ -77,7 +77,6 @@ export default function Calculator({ onClose }) {
           </button>;
         })}
       </div>
-      <div style={{ color: "var(--muted-foreground)", fontSize: "0.65rem", textAlign: "center", marginTop: 11 }}>Keyboard supported · Esc to close</div>
     </div>
   );
 }

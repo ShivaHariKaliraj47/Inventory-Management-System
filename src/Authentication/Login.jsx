@@ -7,6 +7,7 @@ import {
   EyeOff,
   LockKeyhole,
   Mail,
+  Phone,
   Send,
   ShieldCheck,
   UserRound,
@@ -16,7 +17,7 @@ import {
 import { supabase } from "./supabase";
 
 const emailRegex = /^[A-Za-z][A-Za-z0-9._-]*@gmail\.com$/;
-const phoneRegex = /^9[678]\d{8}$/;
+const phoneRegex = /^(\+977)?[9][678]\d{8}$/;
 const pwdRules = [
   { id: "len", label: "8–64 characters", test: value => value.length >= 8 && value.length <= 64 },
   { id: "upper", label: "Uppercase", test: value => /[A-Z]/.test(value) },
@@ -29,10 +30,11 @@ const pwdRules = [
 export default function Login() {
   const [tab, setTab] = useState(window.location.pathname === "/reset-password" ? "reset" : "signin");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [agree, setAgree] = useState(false);
@@ -45,7 +47,7 @@ export default function Login() {
 
   const clearMessages = () => { setError(""); setSuccess(""); setFieldErrors({}); };
   const reset = () => {
-    setEmail(""); setPassword(""); setConfirmPass(""); setFullName(""); setPhone("");
+    setEmail(""); setPhone(""); setPassword(""); setConfirmPass(""); setFirstName(""); setLastName("");
     setAgree(false); setRemember(false); clearMessages();
   };
   const changeTab = next => {
@@ -69,11 +71,14 @@ export default function Login() {
   const handleSignIn = async event => {
     event.preventDefault(); clearMessages();
     const errors = {};
-    if (!email.trim()) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
       errors.email = "Please fill in your Gmail address.";
-    } else if (!emailRegex.test(email.trim())) {
+    } else if (!emailRegex.test(trimmedEmail)) {
       errors.email = "Enter a valid Gmail address, such as name@gmail.com.";
     }
+
     if (!password) {
       errors.password = "Please fill in your password.";
     }
@@ -90,7 +95,11 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      });
+
       if (signInError) {
         if (signInError.message.toLowerCase().includes("email not confirmed")) {
           setError("Your email has not been verified yet. Check Gmail or click Resend link.");
@@ -99,8 +108,11 @@ export default function Login() {
           setError(signInError.message);
         }
       }
-    } catch { setError("Unable to sign in. Please try again."); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Unable to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreate = async event => {
@@ -108,16 +120,14 @@ export default function Login() {
     const errors = {};
     const missing = [];
 
-    if (!fullName.trim()) {
-      errors.fullName = "Please fill in your full name.";
-      missing.push("Full Name");
+    if (!firstName.trim()) {
+      errors.firstName = "Please fill in your first name.";
+      missing.push("First Name");
     }
 
-    if (!phone.trim()) {
-      errors.phone = "Please fill in your phone number.";
-      missing.push("Phone");
-    } else if (!phoneRegex.test(phone.trim())) {
-      errors.phone = "Enter a 10-digit phone number starting with 96, 97, or 98.";
+    if (!lastName.trim()) {
+      errors.lastName = "Please fill in your last name.";
+      missing.push("Last Name");
     }
 
     if (!email.trim()) {
@@ -125,6 +135,16 @@ export default function Login() {
       missing.push("Gmail");
     } else if (!emailRegex.test(email.trim())) {
       errors.email = "Enter a valid Gmail address, such as name@gmail.com.";
+    }
+
+    if (!phone.trim()) {
+      errors.phone = "Please fill in your phone number.";
+      missing.push("Phone");
+    } else {
+      const cleanDigits = phone.trim().replace(/[\s()-]/g, "");
+      if (!phoneRegex.test(cleanDigits)) {
+        errors.phone = "Enter a valid 10-digit phone number (e.g. 98XXXXXXXX).";
+      }
     }
 
     if (!password) {
@@ -158,12 +178,23 @@ export default function Login() {
 
     setLoading(true);
     try {
+      const cleanDigits = phone.trim().replace(/[\s()-]/g, "");
+      const formattedPhone = cleanDigits.startsWith("+")
+        ? cleanDigits
+        : `+977${cleanDigits.replace(/^0+/, "")}`;
+      const fullNameCombined = `${firstName.trim()} ${lastName.trim()}`.trim();
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: fullName.trim(), phone: phone.trim() },
+          data: {
+            full_name: fullNameCombined,
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            phone: formattedPhone,
+          },
         },
       });
       if (signUpError) { setError(signUpError.message); return; }
@@ -275,7 +306,14 @@ export default function Login() {
                 <FormHeading title="Sign in" subtitle="Log in to manage your inventory" />
                 <form className="auth-form" onSubmit={handleSignIn} noValidate>
                   <Field label="Gmail address" icon={Mail} error={fieldErrors.email}>
-                    <AuthInput type="email" value={email} onChange={handleInputChange(setEmail, "email")} placeholder="name@gmail.com" autoComplete="email" isError={!!fieldErrors.email} />
+                    <AuthInput
+                      type="email"
+                      value={email}
+                      onChange={handleInputChange(setEmail, "email")}
+                      placeholder="name@gmail.com"
+                      autoComplete="email"
+                      isError={!!fieldErrors.email}
+                    />
                   </Field>
                   <Field label="Password" icon={LockKeyhole} error={fieldErrors.password}>
                     <PasswordInput value={password} onChange={handleInputChange(setPassword, "password")} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="current-password" isError={!!fieldErrors.password} />
@@ -294,15 +332,18 @@ export default function Login() {
                 <FormHeading title="Create Account" subtitle="Set up your inventory workspace" />
                 <form className="auth-form auth-create-form" onSubmit={handleCreate} noValidate>
                   <div className="auth-field-grid">
-                    <Field label="Full name" icon={UserRound} error={fieldErrors.fullName}>
-                      <AuthInput value={fullName} onChange={handleInputChange(setFullName, "fullName")} placeholder="Your name" autoComplete="name" isError={!!fieldErrors.fullName} />
+                    <Field label="First name" icon={UserRound} error={fieldErrors.firstName}>
+                      <AuthInput value={firstName} onChange={handleInputChange(setFirstName, "firstName")} placeholder="First name" autoComplete="given-name" isError={!!fieldErrors.firstName} />
                     </Field>
-                    <Field label="Phone number" error={fieldErrors.phone}>
-                      <AuthInput type="tel" value={phone} onChange={handleInputChange(setPhone, "phone")} placeholder="98XXXXXXXX" autoComplete="tel" isError={!!fieldErrors.phone} />
+                    <Field label="Last name" icon={UserRound} error={fieldErrors.lastName}>
+                      <AuthInput value={lastName} onChange={handleInputChange(setLastName, "lastName")} placeholder="Last name" autoComplete="family-name" isError={!!fieldErrors.lastName} />
                     </Field>
                   </div>
                   <Field label="Gmail address" icon={Mail} error={fieldErrors.email}>
                     <AuthInput type="email" value={email} onChange={handleInputChange(setEmail, "email")} placeholder="name@gmail.com" autoComplete="email" isError={!!fieldErrors.email} />
+                  </Field>
+                  <Field label="Phone number" icon={Phone} error={fieldErrors.phone}>
+                    <AuthInput type="tel" value={phone} onChange={handleInputChange(setPhone, "phone")} placeholder="98XXXXXXXX" autoComplete="tel" isError={!!fieldErrors.phone} />
                   </Field>
                   <Field label="Password" icon={LockKeyhole} error={fieldErrors.password}>
                     <PasswordInput value={password} onChange={handleInputChange(setPassword, "password")} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="new-password" isError={!!fieldErrors.password} />
