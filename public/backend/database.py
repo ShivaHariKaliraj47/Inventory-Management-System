@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import re
 
 import pymysql
@@ -7,6 +8,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent.parent / ".env.local")
 load_dotenv()
 
 DATABASE_URL = os.getenv(

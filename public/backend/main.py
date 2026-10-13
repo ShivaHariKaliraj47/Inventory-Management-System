@@ -1,8 +1,13 @@
 import os
+from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
 
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent.parent / ".env.local")
 load_dotenv()
 
 from fastapi import Depends, FastAPI  # noqa: E402
@@ -24,7 +29,13 @@ class InventoryPayload(BaseModel):
     sales: list[dict] = Field(default_factory=list)
 
 
-app = FastAPI(title="InvenPro API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="InvenPro API", version="1.0.0", lifespan=lifespan)
 origins = [
     origin.strip()
     for origin in os.getenv(
@@ -41,20 +52,20 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def create_tables() -> None:
-    Base.metadata.create_all(bind=engine)
-
-
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok"}
 
 
+SHARED_STORE_ID = "shared_inventory"
+
+
 @app.get("/api/inventory")
-def get_inventory(owner_id: str = Depends(get_current_user_id)) -> dict:
+def get_inventory(user_id: str = Depends(get_current_user_id)) -> dict:
     with SessionLocal() as session:
-        state = session.get(InventoryState, owner_id)
+        state = session.get(InventoryState, SHARED_STORE_ID)
+        if not state:
+            state = session.get(InventoryState, user_id)
         if not state:
             return {"state": None}
         return {
@@ -106,18 +117,18 @@ def update_low_stock_alerts(session, owner_id: str, payload: InventoryPayload) -
 @app.put("/api/inventory")
 def save_inventory(
     payload: InventoryPayload,
-    owner_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(get_current_user_id),
 ) -> dict:
     with SessionLocal() as session:
-        state = session.get(InventoryState, owner_id)
+        state = session.get(InventoryState, SHARED_STORE_ID)
         values = payload.model_dump()
         if state:
             for field, value in values.items():
                 setattr(state, field, value)
         else:
-            state = InventoryState(owner_id=owner_id, **values)
+            state = InventoryState(owner_id=SHARED_STORE_ID, **values)
             session.add(state)
 
-        emails_sent = update_low_stock_alerts(session, owner_id, payload)
+        emails_sent = update_low_stock_alerts(session, SHARED_STORE_ID, payload)
         session.commit()
         return {"saved": True, "supplierEmailsSent": emails_sent}

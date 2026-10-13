@@ -34,6 +34,36 @@ function Stepper({ value, min = 0, onChange }) {
 
 const EMPTY = { name: "", categoryId: "", supplierId: "", purchasePrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 10, description: "", batchNo: "", expiryDate: "" };
 
+function getSuppliersForCategory(catId, allCategories, allSuppliers, allProducts) {
+  if (!catId) return allSuppliers || [];
+  const cat = (allCategories || []).find(c => c.id === catId);
+  if (!cat) return allSuppliers || [];
+
+  const linkedSupplierIds = new Set(
+    (allProducts || [])
+      .filter(p => p.categoryId === catId && p.supplierId)
+      .map(p => p.supplierId)
+  );
+
+  const catWords = [
+    cat.name,
+    ...(cat.description ? cat.description.split(/[,;\s]+/) : [])
+  ].map(w => w.toLowerCase().trim()).filter(w => w.length > 2);
+
+  const keywordMatched = (allSuppliers || []).filter(s => {
+    const sProducts = (s.products || "").toLowerCase();
+    const sName = (s.name || "").toLowerCase();
+    if (sProducts.includes(cat.name.toLowerCase()) || cat.name.toLowerCase().includes(sProducts)) return true;
+    return catWords.some(w => sProducts.includes(w) || sName.includes(w));
+  });
+
+  const matched = (allSuppliers || []).filter(s =>
+    linkedSupplierIds.has(s.id) || keywordMatched.some(m => m.id === s.id)
+  );
+
+  return matched.length > 0 ? matched : (allSuppliers || []);
+}
+
 export default function Products({ products, setProducts, categories, suppliers }) {
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("");
@@ -44,12 +74,94 @@ export default function Products({ products, setProducts, categories, suppliers 
   const [notifyTarget, setNotifyTarget] = useState(null);
   const [notifiedMap, setNotifiedMap] = useState({});
 
-  const openAdd = () => { setEditing(null); setForm(EMPTY); setShowModal(true); };
+  const selectedSupplier = (suppliers || []).find(s => s.id === form.supplierId);
+  const supplierGoods = selectedSupplier?.products
+    ? selectedSupplier.products.split(/[,;\n]+/).map(g => g.trim()).filter(Boolean)
+    : [];
+
+  const categorySuppliers = form.categoryId
+    ? getSuppliersForCategory(form.categoryId, categories, suppliers, products)
+    : (suppliers || []);
+
+  const nameQuery = form.name?.toLowerCase().trim();
+  const matchingSuppliers = nameQuery
+    ? categorySuppliers.filter(s => {
+        if (!s.products) return false;
+        const list = s.products.toLowerCase().split(/[,;\n]+/).map(p => p.trim());
+        return list.some(item => item === nameQuery || item.includes(nameQuery) || nameQuery.includes(item));
+      })
+    : [];
+
+  const availableSuppliers = matchingSuppliers.length > 0
+    ? matchingSuppliers
+    : (form.categoryId ? categorySuppliers : (suppliers || []));
+
+  const openAdd = () => {
+    setEditing(null);
+    setForm(EMPTY);
+    setShowModal(true);
+  };
   const openEdit = (p) => { setEditing(p); setForm({ ...p }); setShowModal(true); };
   const f = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
+  const handleCategoryChange = (catId) => {
+    const matchingSups = getSuppliersForCategory(catId, categories, suppliers, products);
+    const autoSupId = matchingSups.length === 1 ? matchingSups[0].id : (matchingSups.some(s => s.id === form.supplierId) ? form.supplierId : "");
+    const sup = (suppliers || []).find(s => s.id === autoSupId);
+    const goods = sup?.products ? sup.products.split(/[,;\n]+/).map(g => g.trim()).filter(Boolean) : [];
+    const autoGood = goods.length === 1 ? goods[0] : "";
+    setForm(prev => ({
+      ...prev,
+      categoryId: catId,
+      supplierId: autoSupId,
+      name: autoGood || prev.name,
+    }));
+  };
+
+  const handleSupplierChange = (supId) => {
+    const sup = (suppliers || []).find(s => s.id === supId);
+    const goods = sup?.products ? sup.products.split(/[,;\n]+/).map(g => g.trim()).filter(Boolean) : [];
+    const newName = goods.length === 1 ? goods[0] : (goods.includes(form.name) ? form.name : "");
+
+    let autoCatId = form.categoryId;
+    if (!autoCatId && sup) {
+      const matchCat = (categories || []).find(c => {
+        const catWords = [c.name, ...(c.description ? c.description.split(/[,;\s]+/) : [])]
+          .map(w => w.toLowerCase().trim()).filter(w => w.length > 2);
+        const sProducts = (sup.products || "").toLowerCase();
+        return catWords.some(w => sProducts.includes(w) || w === sup.name.toLowerCase());
+      });
+      if (matchCat) autoCatId = matchCat.id;
+    }
+
+    setForm(prev => ({
+      ...prev,
+      supplierId: supId,
+      categoryId: autoCatId,
+      name: newName,
+    }));
+  };
+
+  const handleProductNameChange = (val) => {
+    const sourceSuppliers = form.categoryId ? categorySuppliers : (suppliers || []);
+    const match = sourceSuppliers.filter(s => {
+      if (!s.products) return false;
+      const list = s.products.toLowerCase().split(/[,;\n]+/).map(p => p.trim());
+      const q = val.toLowerCase().trim();
+      return q && list.some(item => item === q || item.includes(q) || q.includes(item));
+    });
+    if (match.length === 1) {
+      setForm(prev => ({ ...prev, name: val, supplierId: match[0].id }));
+    } else {
+      setForm(prev => ({ ...prev, name: val }));
+    }
+  };
+
   const save = () => {
-    if (!form.name.trim() || !form.categoryId || !form.supplierId) { alert("Name, category and supplier are required."); return; }
+    if (!form.name.trim() || !form.categoryId || !form.supplierId) {
+      alert("Name, category and supplier are required.");
+      return;
+    }
     if (editing) {
       setProducts(prev => prev.map(p => p.id === editing.id ? { ...p, ...form } : p));
     } else {
@@ -206,20 +318,54 @@ export default function Products({ products, setProducts, categories, suppliers 
           <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ gridColumn: "1/-1" }}>
-                <Fld label="Product Name *">
-                  <input value={form.name} onChange={e => f("name", e.target.value)} placeholder="e.g. Coca-Cola 600ml" style={inp} />
+                <Fld label={`Product Name (Good) *${selectedSupplier ? ` (Supplied by ${selectedSupplier.name})` : ""}`}>
+                  {selectedSupplier && supplierGoods.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <select
+                        value={form.name}
+                        onChange={e => handleProductNameChange(e.target.value)}
+                        style={inp}
+                      >
+                        <option value="">Select good supplied by {selectedSupplier.name}…</option>
+                        {supplierGoods.map((g, idx) => (
+                          <option key={idx} value={g}>{g}</option>
+                        ))}
+                      </select>
+                      <input
+                        value={form.name}
+                        onChange={e => handleProductNameChange(e.target.value)}
+                        placeholder={`Or type other good for ${selectedSupplier.name}…`}
+                        style={{ ...inp, fontSize: "0.8rem", padding: "6px 10px", background: "#f8fafc" }}
+                      />
+                    </div>
+                  ) : (
+                    <input
+                      value={form.name}
+                      onChange={e => handleProductNameChange(e.target.value)}
+                      placeholder="e.g. meat, potato, Coca-Cola 600ml"
+                      style={inp}
+                    />
+                  )}
                 </Fld>
               </div>
               <Fld label="Category *">
-                <select value={form.categoryId} onChange={e => f("categoryId", e.target.value)} style={inp}>
+                <select value={form.categoryId} onChange={e => handleCategoryChange(e.target.value)} style={inp}>
                   <option value="">Select category…</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </Fld>
-              <Fld label="Supplier *">
-                <select value={form.supplierId} onChange={e => f("supplierId", e.target.value)} style={inp}>
+              <Fld label={`Supplier *${form.categoryId ? ` (${categories.find(c => c.id === form.categoryId)?.name || "Category"})` : ""}`}>
+                <select
+                  value={form.supplierId}
+                  onChange={e => handleSupplierChange(e.target.value)}
+                  style={inp}
+                >
                   <option value="">Select supplier…</option>
-                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {availableSuppliers.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} {s.products ? `(${s.products})` : ""}
+                    </option>
+                  ))}
                 </select>
               </Fld>
               <Fld label="Purchase Price (₹)">

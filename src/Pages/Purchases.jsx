@@ -106,18 +106,41 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <Fld label="Supplier">
-                  <select value={form.supplierId} onChange={e => setForm({ ...form, supplierId: e.target.value })} style={inp}>
+                  <select
+                    value={form.supplierId}
+                    onChange={e => {
+                      const supId = e.target.value;
+                      // If current product doesn't belong to this supplier, reset product
+                      const stillValid = products.some(p => p.id === form.productId && p.supplierId === supId);
+                      setForm(f => ({ ...f, supplierId: supId, productId: stillValid ? f.productId : "" }));
+                    }}
+                    style={inp}
+                  >
                     <option value="">Select supplier</option>
-                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {(form.productId ? suppliers.filter(s => s.id === products.find(p => p.id === form.productId)?.supplierId) : suppliers).map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
                   </select>
                 </Fld>
                 <Fld label="Product">
-                  <select value={form.productId} onChange={e => {
-                    const prod = products.find(p => p.id === e.target.value);
-                    setForm(f => calcTotal({ ...f, productId: e.target.value, purchasePrice: prod?.purchasePrice ?? f.purchasePrice }));
-                  }} style={inp}>
+                  <select
+                    value={form.productId}
+                    onChange={e => {
+                      const prodId = e.target.value;
+                      const prod = products.find(p => p.id === prodId);
+                      setForm(f => calcTotal({
+                        ...f,
+                        productId: prodId,
+                        supplierId: prod?.supplierId || f.supplierId,
+                        purchasePrice: prod?.purchasePrice ?? f.purchasePrice,
+                      }));
+                    }}
+                    style={inp}
+                  >
                     <option value="">Select product</option>
-                    {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {(form.supplierId ? products.filter(p => p.supplierId === form.supplierId) : products).map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
                   </select>
                 </Fld>
                 <Fld label="Quantity">

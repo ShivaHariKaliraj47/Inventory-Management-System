@@ -7,10 +7,8 @@ import {
   EyeOff,
   LockKeyhole,
   Mail,
-  PackageCheck,
   Send,
   ShieldCheck,
-  Sparkles,
   UserRound,
   ExternalLink,
   RefreshCw,
@@ -41,10 +39,11 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
 
-  const clearMessages = () => { setError(""); setSuccess(""); };
+  const clearMessages = () => { setError(""); setSuccess(""); setFieldErrors({}); };
   const reset = () => {
     setEmail(""); setPassword(""); setConfirmPass(""); setFullName(""); setPhone("");
     setAgree(false); setRemember(false); clearMessages();
@@ -55,13 +54,43 @@ export default function Login() {
     setTab(next);
   };
 
+  const handleInputChange = (setter, key) => event => {
+    setter(event.target.value);
+    if (fieldErrors[key]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+    if (error) setError("");
+  };
+
   const handleSignIn = async event => {
     event.preventDefault(); clearMessages();
-    if (!emailRegex.test(email)) { setError("Enter a valid Gmail address, such as name@gmail.com."); return; }
-    if (!password) { setError("Password is required."); return; }
+    const errors = {};
+    if (!email.trim()) {
+      errors.email = "Please fill in your Gmail address.";
+    } else if (!emailRegex.test(email.trim())) {
+      errors.email = "Enter a valid Gmail address, such as name@gmail.com.";
+    }
+    if (!password) {
+      errors.password = "Please fill in your password.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      if (errors.email && errors.password) {
+        setError("Please fill in both your Gmail address and Password.");
+      } else {
+        setError(errors.email || errors.password);
+      }
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (signInError) {
         if (signInError.message.toLowerCase().includes("email not confirmed")) {
           setError("Your email has not been verified yet. Check Gmail or click Resend link.");
@@ -76,25 +105,69 @@ export default function Login() {
 
   const handleCreate = async event => {
     event.preventDefault(); clearMessages();
-    if (!fullName.trim()) { setError("Full name is required."); return; }
-    if (!phoneRegex.test(phone)) { setError("Enter a 10-digit phone number starting with 96, 97, or 98."); return; }
-    if (!emailRegex.test(email)) { setError("Enter a valid Gmail address, such as name@gmail.com."); return; }
-    if (!pwdRules.every(rule => rule.test(password))) { setError("Password does not meet all requirements."); return; }
-    if (password !== confirmPass) { setError("Passwords do not match."); return; }
-    if (!agree) { setError("You must agree to the Terms and Conditions."); return; }
+    const errors = {};
+    const missing = [];
+
+    if (!fullName.trim()) {
+      errors.fullName = "Please fill in your full name.";
+      missing.push("Full Name");
+    }
+
+    if (!phone.trim()) {
+      errors.phone = "Please fill in your phone number.";
+      missing.push("Phone");
+    } else if (!phoneRegex.test(phone.trim())) {
+      errors.phone = "Enter a 10-digit phone number starting with 96, 97, or 98.";
+    }
+
+    if (!email.trim()) {
+      errors.email = "Please fill in your Gmail address.";
+      missing.push("Gmail");
+    } else if (!emailRegex.test(email.trim())) {
+      errors.email = "Enter a valid Gmail address, such as name@gmail.com.";
+    }
+
+    if (!password) {
+      errors.password = "Please fill in your password.";
+      missing.push("Password");
+    } else if (!pwdRules.every(rule => rule.test(password))) {
+      errors.password = "Password does not meet all requirements.";
+    }
+
+    if (!confirmPass) {
+      errors.confirmPass = "Please confirm your password.";
+      missing.push("Confirm Password");
+    } else if (password && confirmPass && password !== confirmPass) {
+      errors.confirmPass = "Passwords do not match.";
+    }
+
+    if (!agree) {
+      errors.agree = "Please agree to the Terms and Conditions.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      if (missing.length > 1) {
+        setError(`Please fill in the required options: ${missing.join(", ")}.`);
+      } else {
+        const firstKey = Object.keys(errors)[0];
+        setError(errors[firstKey]);
+      }
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: fullName.trim(), phone },
+          data: { full_name: fullName.trim(), phone: phone.trim() },
         },
       });
       if (signUpError) { setError(signUpError.message); return; }
       if (!data.session) {
-        // Verification email required - show dedicated verify screen
         setTab("verify");
         setPassword("");
         setConfirmPass("");
@@ -131,10 +204,20 @@ export default function Login() {
 
   const handleForgot = async event => {
     event.preventDefault(); clearMessages();
-    if (!emailRegex.test(email)) { setError("Enter a valid Gmail address."); return; }
+    const errors = {};
+    if (!email.trim()) {
+      errors.email = "Please fill in your Gmail address.";
+    } else if (!emailRegex.test(email.trim())) {
+      errors.email = "Enter a valid Gmail address, such as name@gmail.com.";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(errors.email);
+      return;
+    }
     setLoading(true);
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) setError(resetError.message);
@@ -145,8 +228,22 @@ export default function Login() {
 
   const handleReset = async event => {
     event.preventDefault(); clearMessages();
-    if (!pwdRules.every(rule => rule.test(password))) { setError("Password does not meet all requirements."); return; }
-    if (password !== confirmPass) { setError("Passwords do not match."); return; }
+    const errors = {};
+    if (!password) {
+      errors.password = "Please fill in your new password.";
+    } else if (!pwdRules.every(rule => rule.test(password))) {
+      errors.password = "Password does not meet all requirements.";
+    }
+    if (!confirmPass) {
+      errors.confirmPass = "Please confirm your password.";
+    } else if (password && confirmPass && password !== confirmPass) {
+      errors.confirmPass = "Passwords do not match.";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError(errors.password || errors.confirmPass);
+      return;
+    }
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -165,11 +262,6 @@ export default function Login() {
 
   return (
     <main className="auth-page">
-      <div className="auth-brand">
-        <span className="auth-brand-mark"><PackageCheck size={23} /></span>
-        <span>InvenPro</span>
-      </div>
-
       <section className={`auth-shell ${createMode ? "auth-shell-create" : ""}`}>
         <PromoPanel createMode={createMode} onAction={() => changeTab(createMode ? "signin" : "create")} />
 
@@ -181,12 +273,12 @@ export default function Login() {
             {tab === "signin" && (
               <>
                 <FormHeading title="Sign in" subtitle="Log in to manage your inventory" />
-                <form className="auth-form" onSubmit={handleSignIn}>
-                  <Field label="Gmail address" icon={Mail}>
-                    <AuthInput type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="name@gmail.com" autoComplete="email" required />
+                <form className="auth-form" onSubmit={handleSignIn} noValidate>
+                  <Field label="Gmail address" icon={Mail} error={fieldErrors.email}>
+                    <AuthInput type="email" value={email} onChange={handleInputChange(setEmail, "email")} placeholder="name@gmail.com" autoComplete="email" isError={!!fieldErrors.email} />
                   </Field>
-                  <Field label="Password" icon={LockKeyhole}>
-                    <PasswordInput value={password} onChange={event => setPassword(event.target.value)} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="current-password" />
+                  <Field label="Password" icon={LockKeyhole} error={fieldErrors.password}>
+                    <PasswordInput value={password} onChange={handleInputChange(setPassword, "password")} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="current-password" isError={!!fieldErrors.password} />
                   </Field>
                   <div className="auth-form-options">
                     <label className="auth-check"><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Remember me</label>
@@ -194,36 +286,38 @@ export default function Login() {
                   </div>
                   <SubmitButton loading={loading}>{loading ? "Signing in…" : "Login Now"}</SubmitButton>
                 </form>
-                <TrustRow />
               </>
             )}
 
             {tab === "create" && (
               <>
                 <FormHeading title="Create Account" subtitle="Set up your inventory workspace" />
-                <form className="auth-form auth-create-form" onSubmit={handleCreate}>
+                <form className="auth-form auth-create-form" onSubmit={handleCreate} noValidate>
                   <div className="auth-field-grid">
-                    <Field label="Full name" icon={UserRound}>
-                      <AuthInput value={fullName} onChange={event => setFullName(event.target.value)} placeholder="Your name" autoComplete="name" required />
+                    <Field label="Full name" icon={UserRound} error={fieldErrors.fullName}>
+                      <AuthInput value={fullName} onChange={handleInputChange(setFullName, "fullName")} placeholder="Your name" autoComplete="name" isError={!!fieldErrors.fullName} />
                     </Field>
-                    <Field label="Phone number">
-                      <AuthInput type="tel" value={phone} onChange={event => setPhone(event.target.value)} placeholder="98XXXXXXXX" autoComplete="tel" required />
+                    <Field label="Phone number" error={fieldErrors.phone}>
+                      <AuthInput type="tel" value={phone} onChange={handleInputChange(setPhone, "phone")} placeholder="98XXXXXXXX" autoComplete="tel" isError={!!fieldErrors.phone} />
                     </Field>
                   </div>
-                  <Field label="Gmail address" icon={Mail}>
-                    <AuthInput type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="name@gmail.com" autoComplete="email" required />
+                  <Field label="Gmail address" icon={Mail} error={fieldErrors.email}>
+                    <AuthInput type="email" value={email} onChange={handleInputChange(setEmail, "email")} placeholder="name@gmail.com" autoComplete="email" isError={!!fieldErrors.email} />
                   </Field>
-                  <Field label="Password" icon={LockKeyhole}>
-                    <PasswordInput value={password} onChange={event => setPassword(event.target.value)} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="new-password" />
+                  <Field label="Password" icon={LockKeyhole} error={fieldErrors.password}>
+                    <PasswordInput value={password} onChange={handleInputChange(setPassword, "password")} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="new-password" isError={!!fieldErrors.password} />
                     <PasswordStrength password={password} />
                   </Field>
-                  <Field label="Confirm password" icon={ShieldCheck}>
-                    <PasswordInput value={confirmPass} onChange={event => setConfirmPass(event.target.value)} show={showConfirm} onToggle={() => setShowConfirm(value => !value)} autoComplete="new-password" />
+                  <Field label="Confirm password" icon={ShieldCheck} error={fieldErrors.confirmPass}>
+                    <PasswordInput value={confirmPass} onChange={handleInputChange(setConfirmPass, "confirmPass")} show={showConfirm} onToggle={() => setShowConfirm(value => !value)} autoComplete="new-password" isError={!!fieldErrors.confirmPass} />
                   </Field>
-                  <label className="auth-check auth-terms"><input type="checkbox" checked={agree} onChange={event => setAgree(event.target.checked)} /> I agree to the Terms and Conditions</label>
+                  <label className={`auth-check auth-terms ${fieldErrors.agree ? "auth-check-error" : ""}`}>
+                    <input type="checkbox" checked={agree} onChange={event => { setAgree(event.target.checked); if (fieldErrors.agree) setFieldErrors(prev => { const n = { ...prev }; delete n.agree; return n; }); }} />
+                    <span>I agree to the Terms and Conditions</span>
+                  </label>
+                  {fieldErrors.agree && <span className="auth-field-error" style={{ marginTop: -4, marginBottom: 4 }}>{fieldErrors.agree}</span>}
                   <SubmitButton loading={loading}>{loading ? "Creating account…" : "Create Account"}</SubmitButton>
                 </form>
-                <TrustRow />
               </>
             )}
 
@@ -294,9 +388,9 @@ export default function Login() {
             {tab === "forgot" && (
               <>
                 <FormHeading title="Reset Password" subtitle="We will send a secure link to your Gmail" />
-                <form className="auth-form" onSubmit={handleForgot}>
-                  <Field label="Gmail address" icon={Mail}>
-                    <AuthInput type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="name@gmail.com" autoComplete="email" required />
+                <form className="auth-form" onSubmit={handleForgot} noValidate>
+                  <Field label="Gmail address" icon={Mail} error={fieldErrors.email}>
+                    <AuthInput type="email" value={email} onChange={handleInputChange(setEmail, "email")} placeholder="name@gmail.com" autoComplete="email" isError={!!fieldErrors.email} />
                   </Field>
                   <SubmitButton loading={loading} icon={Send}>{loading ? "Sending…" : "Send Reset Link"}</SubmitButton>
                   <BackButton onClick={() => changeTab("signin")}>Back to sign in</BackButton>
@@ -307,13 +401,13 @@ export default function Login() {
             {tab === "reset" && (
               <>
                 <FormHeading title="Set New Password" subtitle="Choose a strong password for your account" />
-                <form className="auth-form" onSubmit={handleReset}>
-                  <Field label="New password" icon={LockKeyhole}>
-                    <PasswordInput value={password} onChange={event => setPassword(event.target.value)} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="new-password" />
+                <form className="auth-form" onSubmit={handleReset} noValidate>
+                  <Field label="New password" icon={LockKeyhole} error={fieldErrors.password}>
+                    <PasswordInput value={password} onChange={handleInputChange(setPassword, "password")} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="new-password" isError={!!fieldErrors.password} />
                     <PasswordStrength password={password} />
                   </Field>
-                  <Field label="Confirm password" icon={ShieldCheck}>
-                    <PasswordInput value={confirmPass} onChange={event => setConfirmPass(event.target.value)} show={showConfirm} onToggle={() => setShowConfirm(value => !value)} autoComplete="new-password" />
+                  <Field label="Confirm password" icon={ShieldCheck} error={fieldErrors.confirmPass}>
+                    <PasswordInput value={confirmPass} onChange={handleInputChange(setConfirmPass, "confirmPass")} show={showConfirm} onToggle={() => setShowConfirm(value => !value)} autoComplete="new-password" isError={!!fieldErrors.confirmPass} />
                   </Field>
                   <SubmitButton loading={loading}>{loading ? "Saving…" : "Save New Password"}</SubmitButton>
                   <BackButton onClick={() => { window.history.replaceState({}, "", "/"); setTab("forgot"); clearMessages(); }}>Request another link</BackButton>
@@ -323,8 +417,6 @@ export default function Login() {
           </div>
         </div>
       </section>
-
-      <p className="auth-footer">Secure inventory access powered by Supabase</p>
     </main>
   );
 }
@@ -332,10 +424,7 @@ export default function Login() {
 function PromoPanel({ createMode, onAction }) {
   return (
     <aside className="auth-promo">
-      <div className="auth-promo-glow auth-promo-glow-one" />
-      <div className="auth-promo-glow auth-promo-glow-two" />
       <div className="auth-promo-content">
-        <span className="auth-promo-icon"><Sparkles size={18} /></span>
         <p className="auth-eyebrow">{createMode ? "Welcome back" : "New here?"}</p>
         <h2>{createMode ? "Hello, Friend!" : "Already have an account?"}</h2>
         <p>{createMode ? "Enter your details and start organizing stock, suppliers, sales, and expiry dates." : "Sign in to continue with the inventory workspace you already created."}</p>
@@ -349,18 +438,24 @@ function FormHeading({ title, subtitle }) {
   return <header className="auth-heading"><h1>{title}</h1><p>{subtitle}</p></header>;
 }
 
-function Field({ label, icon: Icon, children }) {
-  return <label className="auth-field"><span>{Icon && <Icon size={14} />} {label}</span>{children}</label>;
-}
-
-function AuthInput(props) {
-  return <input className="auth-input" {...props} />;
-}
-
-function PasswordInput({ show, onToggle, ...props }) {
+function Field({ label, icon: Icon, error, children }) {
   return (
-    <span className="auth-password">
-      <input className="auth-input" type={show ? "text" : "password"} placeholder="••••••••" required {...props} />
+    <label className="auth-field">
+      <span>{Icon && <Icon size={14} />} {label}</span>
+      {children}
+      {error && <span className="auth-field-error">{error}</span>}
+    </label>
+  );
+}
+
+function AuthInput({ isError, className = "", ...props }) {
+  return <input className={`auth-input ${isError ? "is-error" : ""} ${className}`.trim()} {...props} />;
+}
+
+function PasswordInput({ show, onToggle, isError, className = "", ...props }) {
+  return (
+    <span className={`auth-password ${isError ? "has-error" : ""}`}>
+      <input className={`auth-input ${isError ? "is-error" : ""} ${className}`.trim()} type={show ? "text" : "password"} placeholder="••••••••" {...props} />
       <button type="button" onClick={onToggle} aria-label={show ? "Hide password" : "Show password"}>{show ? <EyeOff size={16} /> : <Eye size={16} />}</button>
     </span>
   );
@@ -389,16 +484,4 @@ function BackButton({ children, onClick }) {
 
 function StatusBox({ children, type }) {
   return <div className={`auth-status auth-status-${type}`} role={type === "error" ? "alert" : "status"}>{type === "error" ? <AlertTriangle size={17} /> : <Check size={17} />}{children}</div>;
-}
-
-function TrustRow() {
-  return (
-    <div className="auth-trust" aria-label="Secure authentication">
-      <span><ShieldCheck size={14} /> Protected</span>
-      <i />
-      <span><LockKeyhole size={14} /> Encrypted</span>
-      <i />
-      <span><PackageCheck size={14} /> InvenPro</span>
-    </div>
-  );
 }
