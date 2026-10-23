@@ -201,7 +201,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                     <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
                   </svg>
                 </div>
-                <div style={{ fontFamily: "DM Sans", fontSize: "1.3rem", fontWeight: 700, color: "#1c1916" }}>InvenPro</div>
+                <div style={{ fontFamily: "DM Sans", fontSize: "1.3rem", fontWeight: 700, color: "#1c1916" }}>IMS Flow</div>
                 <div style={{ color: "var(--muted-foreground)", fontSize: "0.75rem" }}>Inventory Management System</div>
               </div>
 

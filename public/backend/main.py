@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="InvenPro API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="IMS Flow API", version="1.0.0", lifespan=lifespan)
 origins = [
     origin.strip()
     for origin in os.getenv(

@@ -2,6 +2,8 @@ import { useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
+  Boxes,
+  CalendarClock,
   Check,
   Eye,
   EyeOff,
@@ -10,6 +12,7 @@ import {
   Phone,
   Send,
   ShieldCheck,
+  TrendingUp,
   UserRound,
   ExternalLink,
   RefreshCw,
@@ -465,11 +468,60 @@ export default function Login() {
 function PromoPanel({ createMode, onAction }) {
   return (
     <aside className="auth-promo">
-      <div className="auth-promo-content">
-        <p className="auth-eyebrow">{createMode ? "Welcome back" : "New here?"}</p>
-        <h2>{createMode ? "Hello, Friend!" : "Already have an account?"}</h2>
-        <p>{createMode ? "Enter your details and start organizing stock, suppliers, sales, and expiry dates." : "Sign in to continue with the inventory workspace you already created."}</p>
-        <button type="button" className="auth-outline-button" onClick={onAction}>{createMode ? "Sign In" : "Create Account"}</button>
+      <div>
+        {/* Brand Header */}
+        <div className="auth-brand-badge">
+          <div className="auth-brand-icon-box">
+            <Boxes size={22} strokeWidth={2.2} />
+          </div>
+          <div className="auth-brand-badge-name">
+            Inventory Management System
+          </div>
+        </div>
+
+        {/* Hero Copy */}
+        <div className="auth-promo-hero">
+          <h2>Smarter Stock. Better Business.</h2>
+          <p>
+            Track stock, monitor expiry dates, and manage purchases and sales from one place.
+          </p>
+        </div>
+
+        {/* White Feature Card with 3 divided rows */}
+        <div className="auth-product-spec">
+          <div className="auth-spec-item">
+            <Boxes size={20} strokeWidth={2} />
+            <div>
+              <strong>Real-time stock tracking</strong>
+              <span>Keep product quantities accurate as purchases and sales occur.</span>
+            </div>
+          </div>
+
+          <div className="auth-spec-item">
+            <CalendarClock size={20} strokeWidth={2} />
+            <div>
+              <strong>Expiry and low-stock alerts</strong>
+              <span>Identify products that need attention before they become a problem.</span>
+            </div>
+          </div>
+
+          <div className="auth-spec-item">
+            <TrendingUp size={20} strokeWidth={2} />
+            <div>
+              <strong>Clear inventory reports</strong>
+              <span>Review stock levels, purchases, and sales in one dashboard.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ paddingTop: 20, borderTop: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>
+          {createMode ? "Already registered?" : "Need a new store ledger?"}
+        </span>
+        <button type="button" className="auth-text-link" onClick={onAction}>
+          {createMode ? "Sign in to workspace →" : "Create account →"}
+        </button>
       </div>
     </aside>
   );

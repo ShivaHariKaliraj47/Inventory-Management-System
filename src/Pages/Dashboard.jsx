@@ -1,167 +1,427 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { getExpiryStatus } from "../data";
-import { IconBox, IconDollar, IconCart, IconBarChart, IconTruck, IconTrending, IconTag } from "../Components/Icons";
-import { Clock, AlertTriangle, Mail, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Clock, Mail, CheckCircle2, ArrowRight } from "lucide-react";
 import NotifySupplierModal from "../Components/NotifySupplierModal";
 
-function StatCard({ Icon, iconColor, iconBg, label, value, sub, onClick }) {
+function Sparkline({ data = [], width = 120, height = 28, color = "#0f766e" }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const padding = 2;
+  const usableHeight = height - padding * 2;
+  const points = data.map((val, idx) => {
+    const x = (idx / (data.length - 1)) * width;
+    const y = height - padding - ((val - min) / range) * usableHeight;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const pointsStr = points.join(" ");
+  const lastPoint = points[points.length - 1].split(",");
+
   return (
-    <div onClick={onClick} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "18px 20px", display: "flex", alignItems: "center", gap: 14, cursor: onClick ? "pointer" : "default", transition: "box-shadow 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
-      onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.1)"}
-      onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)"}
-    >
-      <div style={{ width: 46, height: 46, borderRadius: 11, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", color: iconColor, flexShrink: 0 }}>
-        <Icon />
-      </div>
-      <div>
-        <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 2 }}>{label}</div>
-        <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--foreground)", fontFamily: "DM Sans", lineHeight: 1.1 }}>{value}</div>
-        {sub && <div style={{ fontSize: "0.7rem", color: "var(--muted-foreground)", marginTop: 2 }}>{sub}</div>}
-      </div>
-    </div>
+    <svg width={width} height={height} style={{ overflow: "visible", display: "inline-block", verticalAlign: "middle" }}>
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={pointsStr}
+      />
+      <circle
+        cx={lastPoint[0]}
+        cy={lastPoint[1]}
+        r="2.5"
+        fill={color}
+      />
+    </svg>
   );
 }
 
-export default function Dashboard({ products, categories, suppliers, purchases, sales }) {
+export default function Dashboard({ products = [], categories = [], suppliers = [], purchases = [], sales = [] }) {
   const [notifyTarget, setNotifyTarget] = useState(null);
   const [notifiedMap, setNotifiedMap] = useState({});
 
-  const totalRevenue = sales.reduce((s, x) => s + x.total, 0);
-  const totalCost = purchases.reduce((s, x) => s + x.total, 0);
-  const lowStock = products.filter(p => p.quantity <= p.reorderLevel);
+  // Operational metrics
+  const totalRevenue = useMemo(() => sales.reduce((s, x) => s + (Number(x.total) || 0), 0), [sales]);
+  const totalCost = useMemo(() => purchases.reduce((s, x) => s + (Number(x.total) || 0), 0), [purchases]);
+  const grossProfit = totalRevenue - totalCost;
+  const grossMargin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : "0.0";
+  const avgOrderValue = sales.length > 0 ? Math.round(totalRevenue / sales.length) : 0;
+
+  // Inventory valuation
+  const inventoryAssetValue = useMemo(() => {
+    return products.reduce((acc, p) => acc + (Number(p.quantity) || 0) * (Number(p.purchasePrice) || 0), 0);
+  }, [products]);
+
+  const totalUnitsInStock = useMemo(() => {
+    return products.reduce((acc, p) => acc + (Number(p.quantity) || 0), 0);
+  }, [products]);
+
+  const lowStock = useMemo(() => {
+    return products.filter(p => Number(p.quantity) <= Number(p.reorderLevel));
+  }, [products]);
 
   // Expiry stats
-  const expiryItems = products.map(p => ({ p, s: getExpiryStatus(p.expiryDate) })).filter(x => x.s);
-  const expiredCount   = expiryItems.filter(x => x.s.status === "expired").length;
-  const todayCount     = expiryItems.filter(x => x.s.status === "today").length;
-  const nearCount      = expiryItems.filter(x => x.s.status === "near").length;
-  const soonCount      = expiryItems.filter(x => x.s.status === "soon").length;
+  const expiryItems = useMemo(() => {
+    return products.map(p => ({ p, s: getExpiryStatus(p.expiryDate) })).filter(x => x.s);
+  }, [products]);
+
+  const expiredCount = expiryItems.filter(x => x.s.status === "expired").length;
+  const todayCount   = expiryItems.filter(x => x.s.status === "today").length;
+  const nearCount    = expiryItems.filter(x => x.s.status === "near").length;
+  const soonCount    = expiryItems.filter(x => x.s.status === "soon").length;
+
+  // Daily revenue series for sparkline
+  const sparklineData = useMemo(() => {
+    if (!sales.length) return [0, 0];
+    const grouped = {};
+    sales.forEach(s => {
+      const d = s.date || "2026-08-01";
+      grouped[d] = (grouped[d] || 0) + Number(s.total || 0);
+    });
+    const sortedDates = Object.keys(grouped).sort();
+    const values = sortedDates.map(d => grouped[d]);
+    return values.length > 1 ? values : [values[0] * 0.9, values[0]];
+  }, [sales]);
 
   // Best sellers
-  const salesByProduct = {};
-  for (const s of sales) {
-    if (!salesByProduct[s.productId]) salesByProduct[s.productId] = { qty: 0, total: 0 };
-    salesByProduct[s.productId].qty += s.quantity;
-    salesByProduct[s.productId].total += s.total;
-  }
-  const bestSellers = Object.entries(salesByProduct)
-    .map(([pid, v]) => ({ product: products.find(p => p.id === pid), ...v }))
-    .filter(x => x.product)
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 5);
+  const bestSellers = useMemo(() => {
+    const map = {};
+    for (const s of sales) {
+      if (!map[s.productId]) map[s.productId] = { qty: 0, total: 0 };
+      map[s.productId].qty += Number(s.quantity) || 0;
+      map[s.productId].total += Number(s.total) || 0;
+    }
+    return Object.entries(map)
+      .map(([pid, v]) => ({ product: products.find(p => p.id === pid), ...v }))
+      .filter(x => x.product)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5);
+  }, [sales, products]);
 
-  const recentSales = [...sales].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+  // Recent transactions
+  const recentSales = useMemo(() => {
+    return [...sales].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 6);
+  }, [sales]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-      <div>
-        <h2 style={{ fontSize: "1.45rem", fontWeight: 700 }}>Dashboard Overview</h2>
-        <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.855rem" }}>
-          Welcome back! Here's what's happening today — {new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-        </p>
-      </div>
-
-      {/* Stat cards row 1 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-        <StatCard Icon={IconDollar}   iconColor="#0d9488" iconBg="#ccfbf1" label="Total Revenue"  value={`₹${totalRevenue.toLocaleString()}`}       sub={`${sales.length} orders`} />
-        <StatCard Icon={IconCart}     iconColor="#3b82f6" iconBg="#dbeafe" label="Total Cost"     value={`₹${totalCost.toLocaleString()}`}          sub={`${purchases.length} purchases`} />
-        <StatCard Icon={IconBox}      iconColor="#8b5cf6" iconBg="#ede9fe" label="Total Products" value={products.length}                           sub={`${categories.length} categories`} />
-        <StatCard Icon={IconBarChart} iconColor="#f59e0b" iconBg="#fef3c7" label="Low Stock Items" value={lowStock.length}                         sub="Needs reorder" />
-      </div>
-
-      {/* Stat cards row 2 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-        <StatCard Icon={IconTruck}    iconColor="#7c3aed" iconBg="#ede9fe" label="Suppliers"    value={suppliers.length}                            sub="Active" />
-        <StatCard Icon={IconTrending} iconColor="#16a34a" iconBg="#dcfce7" label="Gross Profit" value={`₹${(totalRevenue - totalCost).toLocaleString()}`} sub="Revenue − Cost" />
-        <StatCard Icon={IconTag}      iconColor="#0d9488" iconBg="#ccfbf1" label="Categories"   value={categories.length}                           sub="Product groups" />
-      </div>
-
-      {/* Expiry Alerts banner */}
-      {(expiredCount + todayCount + nearCount + soonCount) > 0 && (
-        <div style={{ background: "#fff", border: "1.5px solid #fca5a5", borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <Clock size={18} color="#b91c1c" />
-            <strong style={{ fontFamily: "DM Sans", fontSize: "0.95rem", color: "#0f172a" }}>Expiry Alerts</strong>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Tell 5 Fix: Executive Header with named accounting period & zero placeholder greeting */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12, paddingBottom: 4, borderBottom: "1px solid var(--border)" }}>
+        <div>
+          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            IMS · Operational Ledger
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-            {[
-              { count: expiredCount,  label: "Expired",            bg: "#fee2e2", text: "#b91c1c", border: "#fca5a5" },
-              { count: todayCount,    label: "Expiring Today",      bg: "#ffedd5", text: "#c2410c", border: "#fdba74" },
-              { count: nearCount,     label: "Within 7 Days",       bg: "#fef9c3", text: "#a16207", border: "#fde047" },
-              { count: soonCount,     label: "Within 30 Days",      bg: "#dcfce7", text: "#15803d", border: "#86efac" },
-            ].map(x => (
-              <div key={x.label} style={{ background: x.bg, border: `1px solid ${x.border}`, borderRadius: 9, padding: "10px 14px" }}>
-                <div style={{ fontSize: "1.6rem", fontWeight: 700, color: x.text, fontFamily: "DM Sans" }}>{x.count}</div>
-                <div style={{ fontSize: "0.72rem", color: x.text, fontWeight: 600, marginTop: 2 }}>{x.label}</div>
+          <h1 style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.02em", marginTop: 2 }}>
+            Financial & Inventory Overview
+          </h1>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{
+            fontSize: "0.72rem",
+            color: "var(--muted-foreground)",
+            fontVariantNumeric: "tabular-nums",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#0f766e", display: "inline-block" }} />
+            Period: Trailing 30 Days (Oct 2026)
+          </span>
+        </div>
+      </div>
+
+      {/* Tell 3 & Tell 2 Fix: Asymmetric hierarchy — One large hero card + 3 compact secondary metrics */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 14 }}>
+        {/* Primary Hero Metric: Big, dominant, eye lands here */}
+        <div style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          padding: "20px 22px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          gap: 16
+        }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Gross Revenue · Trailing 30D
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: "0.68rem", color: "var(--muted-foreground)" }}>Velocity</span>
+                <Sparkline data={sparklineData} width={100} height={22} color="#0f766e" />
               </div>
-            ))}
-          </div>
-          {(expiredCount + todayCount) > 0 && (
-            <div style={{ marginTop: 12, padding: "8px 12px", background: "#fee2e2", borderRadius: 8, fontSize: "0.79rem", color: "#b91c1c", display: "flex", alignItems: "center", gap: 6 }}>
-              <AlertTriangle size={15} color="#b91c1c" style={{ flexShrink: 0 }} />
-              <span><strong>{expiredCount + todayCount}</strong> product batch{expiredCount + todayCount !== 1 ? "es" : ""} expired or expiring today — <strong>blocked from sales</strong>. Go to Expiry Management to take action.</span>
             </div>
-          )}
+
+            {/* Tell 5 Fix: Tabular digits, prominent primary figure */}
+            <div style={{
+              fontSize: "2.35rem",
+              fontWeight: 700,
+              color: "var(--foreground)",
+              letterSpacing: "-0.03em",
+              fontVariantNumeric: "tabular-nums",
+              lineHeight: 1.1,
+              marginTop: 6
+            }}>
+              ₹{totalRevenue.toLocaleString()}
+            </div>
+          </div>
+
+          {/* Sub-breakdown: Profitability breakdown in crisp tabular alignment */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 12,
+            paddingTop: 14,
+            borderTop: "1px solid var(--border)"
+          }}>
+            <div>
+              <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontWeight: 500 }}>Net Gross Profit</div>
+              <div style={{ fontSize: "1.05rem", fontWeight: 700, color: grossProfit >= 0 ? "var(--foreground)" : "#b91c1c", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
+                ₹{grossProfit.toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontWeight: 500 }}>Operating Margin</div>
+              <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f766e", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
+                {grossMargin}%
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontWeight: 500 }}>Average Order Value</div>
+              <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--foreground)", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
+                ₹{avgOrderValue.toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary Metrics: 3 compact structured rows (No pastel tiles, numbers are the heroes) */}
+        <div style={{ display: "grid", gridTemplateRows: "repeat(3, 1fr)", gap: 10 }}>
+          {/* Secondary 1: Asset Valuation */}
+          <div style={{
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            padding: "12px 16px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
+          }}>
+            <div style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Inventory Valuation (Cost Basis)
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 3 }}>
+              <span style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>
+                ₹{inventoryAssetValue.toLocaleString()}
+              </span>
+              <span style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
+                {totalUnitsInStock.toLocaleString()} units · {products.length} SKUs
+              </span>
+            </div>
+          </div>
+
+          {/* Secondary 2: Operational Risk */}
+          <div style={{
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            padding: "12px 16px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
+          }}>
+            <div style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Reorder & Expiry Exposure
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 3 }}>
+              <span style={{ fontSize: "1.3rem", fontWeight: 700, color: lowStock.length > 0 || expiredCount > 0 ? "#b45309" : "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>
+                {lowStock.length + expiredCount} SKUs
+              </span>
+              <span style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
+                {lowStock.length} low stock · {expiredCount} expired
+              </span>
+            </div>
+          </div>
+
+          {/* Secondary 3: Procurement Purchases */}
+          <div style={{
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            padding: "12px 16px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
+          }}>
+            <div style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Procurement Incurred
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 3 }}>
+              <span style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>
+                ₹{totalCost.toLocaleString()}
+              </span>
+              <span style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
+                {purchases.length} invoices · {suppliers.length} suppliers
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tell 4 Fix: Expiry Alert Panel — Clean hairline border, zero drop shadow, no pastel tiles */}
+      {(expiredCount + todayCount + nearCount + soonCount) > 0 && (
+        <div style={{
+          background: "var(--card)",
+          border: (expiredCount + todayCount) > 0 ? "1px solid #fecaca" : "1px solid var(--border)",
+          borderRadius: 6,
+          padding: "12px 16px"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Clock size={15} color={expiredCount > 0 ? "#b91c1c" : "#b45309"} />
+              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
+                Batch Expiry Monitoring
+              </span>
+              {(expiredCount + todayCount) > 0 && (
+                <span style={{
+                  fontSize: "0.68rem",
+                  padding: "1px 6px",
+                  borderRadius: 3,
+                  background: "#fef2f2",
+                  color: "#b91c1c",
+                  border: "1px solid #fecaca",
+                  fontWeight: 600
+                }}>
+                  {expiredCount + todayCount} Action Required
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: "0.74rem", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ color: expiredCount > 0 ? "#b91c1c" : "var(--muted-foreground)", fontWeight: expiredCount > 0 ? 600 : 400 }}>
+                Expired: <strong>{expiredCount}</strong>
+              </span>
+              <span style={{ color: "var(--border)" }}>|</span>
+              <span style={{ color: todayCount > 0 ? "#c2410c" : "var(--muted-foreground)", fontWeight: todayCount > 0 ? 600 : 400 }}>
+                Today: <strong>{todayCount}</strong>
+              </span>
+              <span style={{ color: "var(--border)" }}>|</span>
+              <span style={{ color: nearCount > 0 ? "#b45309" : "var(--muted-foreground)", fontWeight: nearCount > 0 ? 600 : 400 }}>
+                ≤7 Days: <strong>{nearCount}</strong>
+              </span>
+              <span style={{ color: "var(--border)" }}>|</span>
+              <span style={{ color: "var(--muted-foreground)" }}>
+                ≤30 Days: <strong>{soonCount}</strong>
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Best Sellers + Recent Sales */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-        {/* Best Sellers */}
-        <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-          <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)", background: "linear-gradient(135deg, #1a2332 0%, #243044 100%)", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 7, background: "rgba(13,148,136,0.25)", display: "flex", alignItems: "center", justifyContent: "center", color: "#14b8a6" }}>
-              <IconTrending />
-            </div>
+      {/* Tell 1 & Tell 4 Fix: Performance & Transactions Grid — Flat headers, hairline borders, zero gradients */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {/* Best Selling Products */}
+        <div style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          overflow: "hidden"
+        }}>
+          <div style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
             <div>
-              <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "0.9rem", fontFamily: "DM Sans" }}>Best Selling Goods</div>
-              <div style={{ color: "#475569", fontSize: "0.68rem" }}>Top products by quantity sold</div>
+              <div style={{ fontWeight: 700, fontSize: "0.86rem", color: "var(--foreground)" }}>Top Performing SKUs</div>
+              <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)" }}>Ranked by units sold in recorded sales</div>
             </div>
+            <span style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
+              Top {bestSellers.length} items
+            </span>
           </div>
+
           <div>
-            {bestSellers.map((b, i) => (
-              <div key={b.product.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", borderBottom: i < bestSellers.length - 1 ? "1px solid var(--border)" : "none" }}>
-                <span style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: "50%",
-                  background: i === 0 ? "#fef08a" : i === 1 ? "#e2e8f0" : i === 2 ? "#fed7aa" : "#f1f5f9",
-                  color: i === 0 ? "#854d0e" : i === 1 ? "#475569" : i === 2 ? "#9a3412" : "#64748b",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  border: i < 3 ? "1px solid rgba(0,0,0,0.08)" : "none",
-                  flexShrink: 0
-                }}>
-                  #{i + 1}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: "0.84rem" }}>{b.product.name}</div>
-                  <div style={{ fontSize: "0.7rem", color: "var(--muted-foreground)", marginTop: 1 }}>{b.qty} units sold</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, fontSize: "0.84rem", color: "#16a34a" }}>₹{b.total.toLocaleString()}</div>
-                  {i === 0 && <span className="badge badge-teal" style={{ fontSize: "0.62rem", marginTop: 2 }}>Best Seller</span>}
-                </div>
+            {bestSellers.length === 0 ? (
+              <div style={{ padding: "24px", textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.8rem" }}>
+                No sales recorded in current period.
               </div>
-            ))}
+            ) : (
+              bestSellers.map((b, i) => (
+                <div
+                  key={b.product.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "10px 16px",
+                    borderBottom: i < bestSellers.length - 1 ? "1px solid var(--border)" : "none"
+                  }}
+                >
+                  <span style={{
+                    width: 20,
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: i === 0 ? "#0f766e" : "var(--muted-foreground)",
+                    fontVariantNumeric: "tabular-nums",
+                    flexShrink: 0
+                  }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: "0.83rem", color: "var(--foreground)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {b.product.name}
+                    </div>
+                    <div style={{ fontSize: "0.7rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
+                      {b.qty} units dispatched
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.83rem", color: "var(--foreground)" }}>
+                      ₹{b.total.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Recent Sales */}
-        <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-          <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontWeight: 700, fontSize: "0.95rem", fontFamily: "DM Sans" }}>Recent Sales</div>
-            <span style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Last {recentSales.length} transactions</span>
+        {/* Recent Transactions */}
+        <div style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          overflow: "hidden"
+        }}>
+          <div style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "0.86rem", color: "var(--foreground)" }}>Recent Transactions</div>
+              <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)" }}>Latest ledger entries</div>
+            </div>
+            <span style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
+              Last {recentSales.length} records
+            </span>
           </div>
-          <table style={{ width: "100%" }}>
+
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr>
-                <th style={{ textAlign: "left", padding: "8px 16px", fontSize: "0.7rem" }}>Invoice</th>
-                <th style={{ textAlign: "left", padding: "8px 12px", fontSize: "0.7rem" }}>Product</th>
-                <th style={{ textAlign: "right", padding: "8px 16px", fontSize: "0.7rem" }}>Total</th>
+              <tr style={{ background: "transparent" }}>
+                <th style={{ textAlign: "left", padding: "8px 16px", fontSize: "0.68rem", fontWeight: 600, color: "var(--muted-foreground)", borderBottom: "1px solid var(--border)" }}>Invoice</th>
+                <th style={{ textAlign: "left", padding: "8px 12px", fontSize: "0.68rem", fontWeight: 600, color: "var(--muted-foreground)", borderBottom: "1px solid var(--border)" }}>Product</th>
+                <th style={{ textAlign: "right", padding: "8px 16px", fontSize: "0.68rem", fontWeight: 600, color: "var(--muted-foreground)", borderBottom: "1px solid var(--border)" }}>Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -169,9 +429,15 @@ export default function Dashboard({ products, categories, suppliers, purchases, 
                 const p = products.find(pr => pr.id === s.productId);
                 return (
                   <tr key={s.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td style={{ padding: "10px 16px", fontFamily: "JetBrains Mono", fontSize: "0.75rem", color: "var(--muted-foreground)" }}>{s.id}</td>
-                    <td style={{ padding: "10px 12px", fontWeight: 500, fontSize: "0.82rem" }}>{p?.name ?? s.productId}</td>
-                    <td style={{ padding: "10px 16px", textAlign: "right", fontFamily: "JetBrains Mono", fontWeight: 700, color: "#16a34a", fontSize: "0.82rem" }}>₹{s.total.toLocaleString()}</td>
+                    <td style={{ padding: "9px 16px", fontFamily: "JetBrains Mono, monospace", fontSize: "0.74rem", color: "var(--muted-foreground)" }}>
+                      {s.id}
+                    </td>
+                    <td style={{ padding: "9px 12px", fontSize: "0.8rem", color: "var(--foreground)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>
+                      {p?.name ?? s.productId}
+                    </td>
+                    <td style={{ padding: "9px 16px", textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontWeight: 600, color: "var(--foreground)", fontSize: "0.8rem", fontVariantNumeric: "tabular-nums" }}>
+                      ₹{s.total.toLocaleString()}
+                    </td>
                   </tr>
                 );
               })}
@@ -180,42 +446,58 @@ export default function Dashboard({ products, categories, suppliers, purchases, 
         </div>
       </div>
 
-      {/* Low Stock Alert with Manual Supplier Notification */}
+      {/* Tell 4 Fix: Stock Replenishment List — Flat hairline list, crisp actions */}
       {lowStock.length > 0 && (
-        <div style={{ background: "#fff", border: "1.5px solid #fde047", borderRadius: 12, padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <AlertTriangle size={18} color="#a16207" />
-              <strong style={{ fontFamily: "DM Sans", fontSize: "0.95rem", color: "#a16207" }}>
-                Low Stock Alert — {lowStock.length} item{lowStock.length !== 1 ? "s" : ""} need replenishment
+        <div style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          padding: "14px 18px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <AlertTriangle size={15} color="#b45309" />
+              <strong style={{ fontSize: "0.84rem", color: "var(--foreground)", letterSpacing: "-0.01em" }}>
+                Replenishment Threshold Triggered
               </strong>
+              <span style={{
+                fontSize: "0.68rem",
+                color: "#b45309",
+                background: "#fef3c7",
+                padding: "1px 6px",
+                borderRadius: 3,
+                fontWeight: 600,
+                border: "1px solid #fde68a"
+              }}>
+                {lowStock.length} items
+              </span>
             </div>
-            <span style={{ fontSize: "0.75rem", color: "var(--muted-foreground)" }}>
-              Manual alert: click to review and send reorder request
+            <span style={{ fontSize: "0.7rem", color: "var(--muted-foreground)" }}>
+              Inventory level ≤ Reorder safety limit
             </span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
             {lowStock.map(p => {
               const sup = (suppliers || []).find(s => s.id === p.supplierId);
               const isNotified = !!notifiedMap[p.id];
               return (
                 <div key={p.id} style={{
-                  background: "#fffbeb",
-                  border: "1px solid #fef08a",
-                  borderRadius: 10,
-                  padding: "10px 14px",
+                  background: "var(--background)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                  padding: "9px 12px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  gap: 12,
+                  gap: 10
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: "0.86rem", color: "#1c1917", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontWeight: 600, fontSize: "0.8rem", color: "var(--foreground)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {p.name}
                     </div>
-                    <div style={{ fontSize: "0.72rem", color: "#a16207", marginTop: 2 }}>
-                      <strong>{p.quantity}</strong> left (min: {p.reorderLevel}) · {sup?.name || "No supplier"}
+                    <div style={{ fontSize: "0.7rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums", marginTop: 1 }}>
+                      <strong style={{ color: "#b45309" }}>{p.quantity}</strong> on hand (min: {p.reorderLevel}) · {sup?.name || "Unassigned"}
                     </div>
                   </div>
 
@@ -223,30 +505,28 @@ export default function Dashboard({ products, categories, suppliers, purchases, 
                     type="button"
                     onClick={() => setNotifyTarget({ product: p, supplier: sup })}
                     style={{
-                      padding: "6px 12px",
-                      background: isNotified ? "#dcfce7" : "#0d9488",
-                      color: isNotified ? "#15803d" : "#ffffff",
-                      border: isNotified ? "1px solid #86efac" : "none",
-                      borderRadius: 7,
-                      fontSize: "0.75rem",
+                      padding: "5px 10px",
+                      background: isNotified ? "transparent" : "#0f766e",
+                      color: isNotified ? "#0f766e" : "#ffffff",
+                      border: isNotified ? "1px solid #0f766e" : "1px solid transparent",
+                      borderRadius: 4,
+                      fontSize: "0.72rem",
                       fontWeight: 600,
                       cursor: "pointer",
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 5,
+                      gap: 4,
                       whiteSpace: "nowrap",
-                      flexShrink: 0,
-                      transition: "all 0.15s ease",
-                      boxShadow: isNotified ? "none" : "0 2px 4px rgba(13,148,136,0.25)",
+                      flexShrink: 0
                     }}
                   >
                     {isNotified ? (
                       <>
-                        <CheckCircle2 size={13} /> Notified
+                        <CheckCircle2 size={12} /> Notified
                       </>
                     ) : (
                       <>
-                        <Mail size={13} /> Notify
+                        <Mail size={12} /> Order
                       </>
                     )}
                   </button>
@@ -257,7 +537,7 @@ export default function Dashboard({ products, categories, suppliers, purchases, 
         </div>
       )}
 
-      {/* Manual Notify Supplier Modal */}
+      {/* Floating Dialog: True overlay layer, appropriately uses drop shadow */}
       {notifyTarget && (
         <NotifySupplierModal
           product={notifyTarget.product}

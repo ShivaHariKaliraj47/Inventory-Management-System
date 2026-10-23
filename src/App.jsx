@@ -17,6 +17,16 @@ import { initialCategories, initialProducts, initialSuppliers, initialPurchases,
 
 const profile = user => user && ({ id: user.id, email: user.email, fullName: user.user_metadata?.full_name || "", phone: user.user_metadata?.phone || "" });
 
+function mergeListWithInitial(dbList = [], initList = [], key = "id", updateFn) {
+  if (!dbList || dbList.length === 0) return initList;
+  const initMap = new Map(initList.map(item => [item[key], item]));
+  return dbList.map(item => {
+    const init = initMap.get(item[key]);
+    if (!init) return item;
+    return updateFn ? updateFn(item, init) : { ...item, ...init };
+  });
+}
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(!!supabase);
@@ -51,11 +61,21 @@ export default function App() {
       .then(state => {
         if (!active) return;
         if (state) {
-          setCategories(state.categories);
-          setProducts(state.products);
-          setSuppliers(state.suppliers);
-          setPurchases(state.purchases);
-          setSales(state.sales);
+          const mergedCategories = mergeListWithInitial(state.categories, initialCategories, "id", (db, init) => ({ ...db, name: init.name, description: init.description }));
+          const mergedProducts = mergeListWithInitial(state.products, initialProducts, "id", (db, init) => ({ ...init, ...db, name: init.name, description: init.description, batchNo: init.batchNo, expiryDate: init.expiryDate, categoryId: init.categoryId || db.categoryId, supplierId: init.supplierId || db.supplierId }));
+          const mergedSuppliers = mergeListWithInitial(state.suppliers, initialSuppliers, "id", (db, init) => ({ ...db, name: init.name, contact: init.contact, email: init.email, address: init.address, products: init.products }));
+          const mergedPurchases = mergeListWithInitial(state.purchases, initialPurchases, "id", (db, init) => ({ ...db, productId: init.productId || db.productId }));
+          const mergedSales = mergeListWithInitial(state.sales, initialSales, "id", (db, init) => ({
+            ...db,
+            customer: init.customer !== undefined ? init.customer : db.customer,
+            productId: init.productId || db.productId,
+          }));
+
+          setCategories(mergedCategories);
+          setProducts(mergedProducts);
+          setSuppliers(mergedSuppliers);
+          setPurchases(mergedPurchases);
+          setSales(mergedSales);
         }
         setInventoryReady(true);
       })
@@ -100,7 +120,7 @@ export default function App() {
       case "stock":      return <StockRecords {...shared} />;
       case "reports":    return <Reports {...shared} />;
       case "expiry":     return <ExpiryManagement {...shared} />;
-      case "settings":   return <Settings currentUser={currentUser} />;
+      case "settings":   return <Settings currentUser={currentUser} {...shared} />;
       default:           return <Dashboard {...shared} />;
     }
   };

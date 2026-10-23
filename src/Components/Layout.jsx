@@ -90,6 +90,30 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Global keyboard shortcuts (Decision 4: every action shows its shortcut)
+  useEffect(() => {
+    const handleKeyDown = e => {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      const isInput = tag === "input" || tag === "textarea" || tag === "select";
+
+      // Command/Ctrl + K: Focus global search
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        const input = searchRef.current?.querySelector("input");
+        input?.focus();
+        setShowSearch(true);
+      }
+
+      // 'c' or 'C': Toggle calculator when not inside an input
+      if (!isInput && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        setShowCalculator(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const initials = (currentUser.fullName || currentUser.email).split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   const displayName = currentUser.fullName || currentUser.email.split("@")[0];
 
@@ -121,8 +145,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
           </div>
           {sidebarOpen && (
             <div>
-              <div style={{ color: "#f1f5f9", fontFamily: "DM Sans", fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.2 }}>InvenPro</div>
-              <div style={{ color: "#475569", fontSize: "0.62rem", fontWeight: 500 }}>Inventory System</div>
+              <div style={{ color: "#f1f5f9", fontFamily: "DM Sans", fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.02em", lineHeight: 1.2 }}>IMS</div>
             </div>
           )}
         </div>
@@ -210,42 +233,45 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
           {/* Global Search */}
           <div ref={searchRef} style={{ flex: 1, maxWidth: 420, position: "relative" }}>
             <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted-foreground)", display: "flex", alignItems: "center" }}>
-              <Search size={15} />
+              <Search size={14} />
             </span>
             <input
               value={searchQ}
               onChange={e => { setSearchQ(e.target.value); setShowSearch(true); }}
               onFocus={() => setShowSearch(true)}
-              placeholder="Search products, suppliers, sales… (min 2 chars)"
+              placeholder="Search products, suppliers, sales…"
               style={{
-                width: "100%", padding: "7px 12px 7px 32px",
-                border: "1.5px solid var(--border)", borderRadius: 8,
-                background: "var(--muted)", fontSize: "0.82rem",
-                outline: "none", boxSizing: "border-box", transition: "border 0.15s",
+                width: "100%", padding: "6px 56px 6px 30px",
+                border: "1px solid var(--border)", borderRadius: 4,
+                background: "var(--surface-subtle)", fontSize: "12.5px",
+                outline: "none", boxSizing: "border-box", transition: "border-color 80ms ease",
               }}
               onFocusCapture={e => e.target.style.borderColor = "var(--primary)"}
               onBlurCapture={e => e.target.style.borderColor = "var(--border)"}
             />
+            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)" }}>
+              <kbd>Ctrl K</kbd>
+            </span>
             {/* Search Dropdown */}
             {showSearch && searchResults.length > 0 && (
-              <div style={{ position: "absolute", top: 38, left: 0, right: 0, background: "#fff", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 300, overflow: "hidden", maxHeight: 340, overflowY: "auto" }}>
+              <div style={{ position: "absolute", top: 36, left: 0, right: 0, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 300, overflow: "hidden", maxHeight: 340, overflowY: "auto" }}>
                 {searchResults.map((r, i) => (
                   <button key={i} onClick={() => { setCurrentPage(r.page); setShowSearch(false); setSearchQ(""); }}
-                    style={{ display: "flex", alignItems: "flex-start", gap: 10, width: "100%", padding: "9px 14px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", borderBottom: i < searchResults.length - 1 ? "1px solid var(--border)" : "none" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                    style={{ display: "flex", alignItems: "flex-start", gap: 10, width: "100%", padding: "8px 12px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", borderBottom: i < searchResults.length - 1 ? "1px solid var(--border)" : "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--surface-subtle)"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
                     <span style={{ marginTop: 2 }}>{typeIcons[r.type]}</span>
                     <div>
-                      <div style={{ fontSize: "0.84rem", fontWeight: 500 }}>{r.label}</div>
-                      <div style={{ fontSize: "0.7rem", color: typeColors[r.type], marginTop: 1 }}>{r.sub}</div>
+                      <div style={{ fontSize: "12.5px", fontWeight: 500, color: "var(--foreground)" }}>{r.label}</div>
+                      <div style={{ fontSize: "11px", color: typeColors[r.type], marginTop: 1 }}>{r.sub}</div>
                     </div>
                   </button>
                 ))}
               </div>
             )}
             {showSearch && q.length > 1 && searchResults.length === 0 && (
-              <div style={{ position: "absolute", top: 38, left: 0, right: 0, background: "#fff", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 300, padding: "14px", textAlign: "center", color: "var(--muted-foreground)", fontSize: "0.8rem" }}>
+              <div style={{ position: "absolute", top: 36, left: 0, right: 0, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 300, padding: "12px", textAlign: "center", color: "var(--muted-foreground)", fontSize: "12px" }}>
                 No results found for "{searchQ}"
               </div>
             )}
@@ -255,10 +281,10 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
 
           {/* Quick calculator */}
           <div style={{ position: "relative" }}>
-            <button type="button" aria-label="Open calculator" aria-expanded={showCalculator} title="Calculator"
+            <button type="button" aria-label="Open calculator (C)" aria-expanded={showCalculator} title="Calculator (Shortcut: C)"
               onClick={() => { setShowCalculator(open => !open); setShowNotifs(false); setShowUserMenu(false); }}
               style={{ ...iconBtnStyle, color: showCalculator ? "var(--primary)" : "var(--muted-foreground)" }}>
-              <CalculatorIcon size={17} strokeWidth={1.9} />
+              <CalculatorIcon size={16} strokeWidth={2} />
             </button>
             {showCalculator && (
               <DropMenu width={290} onClose={() => setShowCalculator(false)}>
@@ -339,13 +365,13 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
   );
 }
 
-const iconBtnStyle = { width: 34, height: 34, borderRadius: "50%", border: "1.5px solid var(--border)", background: "var(--muted)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-foreground)", transition: "all 0.15s" };
+const iconBtnStyle = { width: 30, height: 30, borderRadius: 4, border: "1px solid var(--border)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-foreground)", transition: "background 80ms ease, border-color 80ms ease" };
 
 function DropMenu({ children, width, onClose }) {
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 90 }} />
-      <div style={{ position: "absolute", right: 0, top: 42, width, background: "#fff", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 100, overflow: "hidden" }}>
+      <div style={{ position: "absolute", right: 0, top: 38, width, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, boxShadow: "0 6px 24px rgba(0,0,0,0.12)", zIndex: 100, overflow: "hidden" }}>
         {children}
       </div>
     </>

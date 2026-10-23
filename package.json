@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "cmd /c start-app.bat",
     "dev": "vite",
     "backend": "python -m uvicorn main:app --reload --port 8000 --app-dir public/backend",
     "build": "vite build",

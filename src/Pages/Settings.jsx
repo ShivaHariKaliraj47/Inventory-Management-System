@@ -1,15 +1,30 @@
 import { useEffect, useState } from "react";
-import { Mail, Save, UserRound } from "lucide-react";
+import { Mail, Save, UserRound, RefreshCw, Database } from "lucide-react";
 import { supabase } from "../Authentication/supabase";
+import {
+  initialCategories,
+  initialProducts,
+  initialSuppliers,
+  initialPurchases,
+  initialSales,
+} from "../data";
 
 const emailRegex = /^[A-Za-z][A-Za-z0-9._-]*@gmail\.com$/;
 
-export default function Settings({ currentUser }) {
+export default function Settings({
+  currentUser,
+  setCategories,
+  setProducts,
+  setSuppliers,
+  setPurchases,
+  setSales,
+}) {
   const [fullName, setFullName] = useState(currentUser?.fullName || "");
   const [email, setEmail] = useState(currentUser?.email || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [dataSyncMsg, setDataSyncMsg] = useState("");
 
   useEffect(() => {
     setFullName(currentUser?.fullName || "");
@@ -34,12 +49,24 @@ export default function Settings({ currentUser }) {
     finally { setSaving(false); }
   };
 
+  const handleSyncDataJs = () => {
+    if (!confirm("Reload all data from src/data.js? This will update products, sales (customer names), suppliers, and categories to match data.js.")) return;
+    if (setCategories) setCategories(initialCategories);
+    if (setProducts) setProducts(initialProducts);
+    if (setSuppliers) setSuppliers(initialSuppliers);
+    if (setPurchases) setPurchases(initialPurchases);
+    if (setSales) setSales(initialSales);
+    setDataSyncMsg("All inventory & sales data successfully reloaded from src/data.js and saved to database!");
+    setTimeout(() => setDataSyncMsg(""), 5000);
+  };
+
   return (
-    <div style={{ maxWidth: 640 }}>
-      <div style={{ marginBottom: 22 }}>
+    <div style={{ maxWidth: 640, display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
         <h2 style={{ fontSize: "1.45rem", fontWeight: 700 }}>Settings</h2>
-        <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.855rem" }}>Manage your account profile</p>
+        <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.855rem" }}>Manage your account profile and data preferences</p>
       </div>
+
       <div className="card-shadow" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
         <div style={{ borderBottom: "1px solid var(--border)", padding: "18px 22px" }}>
           <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Profile details</h3>
@@ -65,6 +92,52 @@ export default function Settings({ currentUser }) {
           {message && <div role="status" className="badge-green" style={{ borderRadius: "var(--radius)", padding: 12, fontSize: "0.8rem" }}>{message}</div>}
           <button type="submit" disabled={saving} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 8, background: "var(--primary)", color: "var(--primary-foreground)", border: 0, borderRadius: "var(--radius)", padding: "10px 18px", fontWeight: 600, cursor: saving ? "wait" : "pointer" }}><Save size={16} /> {saving ? "Saving…" : "Save Profile"}</button>
         </form>
+      </div>
+
+      {/* Data Management & Sync */}
+      <div className="card-shadow" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+        <div style={{ borderBottom: "1px solid var(--border)", padding: "18px 22px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Database size={18} color="var(--primary)" />
+            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Data Sync (src/data.js)</h3>
+          </div>
+          <p style={{ color: "var(--muted-foreground)", fontSize: "0.78rem", margin: "4px 0 0" }}>
+            Synchronize your database with custom entries or changes made directly in <code style={{ fontFamily: "JetBrains Mono, monospace" }}>src/data.js</code>.
+          </p>
+        </div>
+
+        <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14 }}>
+          <p style={{ fontSize: "0.82rem", color: "var(--muted-foreground)", lineHeight: 1.5, margin: 0 }}>
+            If you changed customer names, product names, or seed values in <code style={{ fontFamily: "JetBrains Mono, monospace" }}>src/data.js</code>, click below to force-refresh all active inventory tables and sync them to the database.
+          </p>
+
+          {dataSyncMsg && (
+            <div role="status" className="badge-green" style={{ borderRadius: "var(--radius)", padding: 12, fontSize: "0.8rem" }}>
+              {dataSyncMsg}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSyncDataJs}
+            style={{
+              alignSelf: "flex-start",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: "#ffffff",
+              color: "var(--foreground)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: "10px 16px",
+              fontWeight: 600,
+              fontSize: "0.82rem",
+              cursor: "pointer",
+            }}
+          >
+            <RefreshCw size={15} /> Reload Data from data.js
+          </button>
+        </div>
       </div>
     </div>
   );

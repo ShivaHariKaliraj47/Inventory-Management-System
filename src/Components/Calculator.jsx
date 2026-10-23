@@ -59,21 +59,36 @@ export default function Calculator({ onClose }) {
   const keys = ["AC", "±", "%", "÷", "7", "8", "9", "×", "4", "5", "6", "−", "1", "2", "3", "+", "⌫", "0", ".", "="];
 
   return (
-    <div ref={panelRef} tabIndex={-1} onKeyDown={handleKeyDown} role="dialog" aria-label="Calculator" style={{ padding: 16, outline: "none" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <span style={{ fontFamily: "DM Sans", fontSize: "0.9rem", fontWeight: 700 }}>Calculator</span>
-        <button type="button" aria-label="Close calculator" onClick={onClose} style={{ border: 0, background: "transparent", color: "var(--muted-foreground)", cursor: "pointer", display: "flex", padding: 3 }}><X size={17} /></button>
+    <div ref={panelRef} tabIndex={-1} onKeyDown={handleKeyDown} role="dialog" aria-label="Calculator" style={{ padding: 14, outline: "none", background: "var(--card)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <span style={{ fontSize: "12.5px", fontWeight: 600, color: "var(--foreground)" }}>Ledger Calculator</span>
+        <button type="button" aria-label="Close calculator" onClick={onClose} style={{ border: 0, background: "transparent", color: "var(--muted-foreground)", cursor: "pointer", display: "flex", padding: 2 }}><X size={15} /></button>
       </div>
-      <div aria-live="polite" style={{ background: "var(--muted)", border: "1px solid var(--border)", borderRadius: 9, padding: "10px 13px", textAlign: "right", marginBottom: 12, overflow: "hidden" }}>
-        <div style={{ height: 16, fontSize: "0.68rem", color: "var(--muted-foreground)" }}>{calc.operator && `${calc.stored} ${calc.operator}`}</div>
-        <div className="mono" style={{ fontSize: "1.6rem", fontWeight: 500, whiteSpace: "nowrap", overflow: "auto" }}>{calc.display}</div>
+      <div aria-live="polite" style={{ background: "var(--surface-subtle)", border: "1px solid var(--border)", borderRadius: 4, padding: "8px 12px", textAlign: "right", marginBottom: 10, overflow: "hidden" }}>
+        <div style={{ height: 14, fontSize: "10.5px", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>{calc.operator && `${calc.stored} ${calc.operator}`}</div>
+        <div className="mono" style={{ fontSize: "1.45rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "auto", color: "var(--foreground)" }}>{calc.display}</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
         {keys.map(key => {
           const operator = ["÷", "×", "−", "+", "="].includes(key);
+          const isEquals = key === "=";
           return <button key={key} type="button" onClick={() => press(key)} aria-label={key === "⌫" ? "Backspace" : key}
-            style={{ height: 43, borderRadius: 7, border: "1px solid var(--border)", background: key === "=" ? "var(--primary)" : operator ? "#e6f5f2" : "var(--muted)", color: key === "=" ? "#fff" : operator ? "var(--primary-dark)" : "var(--foreground)", fontFamily: "Inter", fontSize: "0.95rem", fontWeight: operator ? 700 : 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {key === "⌫" ? <Delete size={17} /> : key}
+            style={{
+              height: 36,
+              borderRadius: 4,
+              border: "1px solid var(--border)",
+              background: isEquals ? "var(--primary)" : operator ? "var(--surface-subtle)" : "var(--card)",
+              color: isEquals ? "#fff" : operator ? "var(--primary)" : "var(--foreground)",
+              fontFamily: "Inter, sans-serif",
+              fontSize: "13px",
+              fontWeight: operator ? 600 : 500,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "background 80ms ease"
+            }}>
+            {key === "⌫" ? <Delete size={15} /> : key}
           </button>;
         })}
       </div>

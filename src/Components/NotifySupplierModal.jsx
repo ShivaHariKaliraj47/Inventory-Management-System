@@ -25,7 +25,7 @@ export default function NotifySupplierModal({ product, supplier, onClose, onSent
       `• Requested Reorder Quantity: ${reorderQty} units\n` +
       (note ? `• Note: ${note}\n` : "") +
       `\nPlease confirm availability and dispatch replenishment.\n\n` +
-      `Thank you,\nInvenPro Inventory Management`
+      `Thank you,\nIMS Flow`
     );
   };
 
@@ -82,7 +82,7 @@ export default function NotifySupplierModal({ product, supplier, onClose, onSent
                 </table>
                 ${note ? `<p style="padding: 10px 14px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;"><strong>Note:</strong> ${note}</p>` : ""}
                 <p>Please confirm availability and dispatch replenishment.</p>
-                <p style="margin-top: 24px; color: #64748b; font-size: 0.85rem;">Sent from InvenPro Inventory Management System</p>
+                <p style="margin-top: 24px; color: #64748b; font-size: 0.85rem;">Sent from IMS Flow Inventory Management System</p>
               </div>
             `,
           }),
