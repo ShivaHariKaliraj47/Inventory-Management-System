@@ -8,11 +8,11 @@ export const initialCategories = [
 ];
 
 export const initialSuppliers = [
-  { id: "S001", name: "ABC Traders", contact: "9876543210", email: "abc@gmail.com", address: "12 Market Road, Delhi", products: "Rice, Wheat" },
-  { id: "S002", name: "Fresh Foods Co.", contact: "9123456780", email: "fresh@gmail.com", address: "45 MG Road, Mumbai", products: "Milk, Cheese, Butter" },
-  { id: "S003", name: "Beverage company pvt ltd", contact: "9000012345", email: "bev@gmail.com", address: "7 Park Street, Kolkata", products: "Coke, Pepsi, Sprite" },
-  { id: "S004", name: "Snack Hub", contact: "9871234560", email: "snack@gmail.com", address: "22 Brigade Road, Bangalore", products: "Chips, Biscuits, Namkeen" },
-  { id: "S005", name: "CarePlus Ltd.", contact: "9811223344", email: "careplus@gmail.com", address: "88 Nehru Nagar, Pune", products: "Soaps, Shampoos" },
+  { id: "S001", name: "ABC Traders", contact: "9841234567", email: "abc@gmail.com", address: "12 New Road, Kathmandu", products: "Rice, Wheat" },
+  { id: "S002", name: "Fresh Foods Co.", contact: "9801234567", email: "fresh@gmail.com", address: "45 Lakeside, Pokhara", products: "Milk, Cheese, Butter" },
+  { id: "S003", name: "Beverage Company Pvt. Ltd.", contact: "9851023456", email: "bev@gmail.com", address: "7 Main Road, Biratnagar", products: "Coke, Pepsi, Sprite" },
+  { id: "S004", name: "Snack Hub", contact: "9860123456", email: "snack@gmail.com", address: "22 Traffic Chowk, Butwal", products: "Chips, Biscuits, Namkeen" },
+  { id: "S005", name: "CarePlus Ltd.", contact: "9818223344", email: "careplus@gmail.com", address: "88 Pulchowk, Lalitpur", products: "Soaps, Shampoos" },
 ];
 
 export const initialProducts = [

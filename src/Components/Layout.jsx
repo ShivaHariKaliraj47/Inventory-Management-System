@@ -72,13 +72,13 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
   const q = searchQ.toLowerCase().trim();
   const searchResults = q.length > 1 ? [
     ...(products || []).filter(p => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q))
-      .slice(0, 4).map(p => ({ type: "product", label: p.name, sub: `Product · ₹${p.sellingPrice} · Qty: ${p.quantity}`, page: "products" })),
+      .slice(0, 4).map(p => ({ type: "product", label: p.name, sub: `Product · Rs. ${p.sellingPrice} · Qty: ${p.quantity}`, page: "products" })),
     ...(categories || []).filter(c => c.name.toLowerCase().includes(q))
       .slice(0, 3).map(c => ({ type: "category", label: c.name, sub: `Category`, page: "categories" })),
     ...(suppliers || []).filter(s => s.name.toLowerCase().includes(q))
       .slice(0, 3).map(s => ({ type: "supplier", label: s.name, sub: `Supplier · ${s.contact}`, page: "suppliers" })),
     ...(sales || []).filter(s => s.id.toLowerCase().includes(q) || s.customer?.toLowerCase().includes(q))
-      .slice(0, 3).map(s => ({ type: "sale", label: `${s.id} — ${s.customer || "Walk-in"}`, sub: `Sale · ₹${s.total}`, page: "sales" })),
+      .slice(0, 3).map(s => ({ type: "sale", label: `${s.id} — ${s.customer || "Walk-in"}`, sub: `Sale · Rs. ${s.total}`, page: "sales" })),
   ] : [];
 
   // Close search on outside click
@@ -241,7 +241,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
               onFocus={() => setShowSearch(true)}
               placeholder="Search products, suppliers, sales…"
               style={{
-                width: "100%", padding: "6px 56px 6px 30px",
+                width: "100%", padding: "6px 12px 6px 30px",
                 border: "1px solid var(--border)", borderRadius: 4,
                 background: "var(--surface-subtle)", fontSize: "12.5px",
                 outline: "none", boxSizing: "border-box", transition: "border-color 80ms ease",
@@ -249,9 +249,6 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
               onFocusCapture={e => e.target.style.borderColor = "var(--primary)"}
               onBlurCapture={e => e.target.style.borderColor = "var(--border)"}
             />
-            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)" }}>
-              <kbd>Ctrl K</kbd>
-            </span>
             {/* Search Dropdown */}
             {showSearch && searchResults.length > 0 && (
               <div style={{ position: "absolute", top: 36, left: 0, right: 0, background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, boxShadow: "0 8px 24px rgba(0,0,0,0.1)", zIndex: 300, overflow: "hidden", maxHeight: 340, overflowY: "auto" }}>

@@ -55,7 +55,7 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
         <div>
           <h2 style={{ margin: 0, fontFamily: "DM Sans", fontSize: "1.4rem", fontWeight: 700 }}>Purchases</h2>
           <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
-            {purchases.length} purchases · Total: ₹{purchases.reduce((s, p) => s + p.total, 0).toLocaleString()}
+            {purchases.length} purchases · Total: Rs. {purchases.reduce((s, p) => s + p.total, 0).toLocaleString()}
           </p>
         </div>
         <button onClick={openAdd} style={addBtn}>+ Add Purchase</button>
@@ -79,8 +79,8 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
                     <td style={{ fontWeight: 500 }}>{sup?.name ?? p.supplierId}</td>
                     <td>{prod?.name ?? p.productId}</td>
                     <td className="mono">{p.quantity}</td>
-                    <td className="mono">₹{p.purchasePrice}</td>
-                    <td className="mono" style={{ fontWeight: 700, color: "#4f46e5" }}>₹{p.total.toLocaleString()}</td>
+                    <td className="mono">Rs. {p.purchasePrice}</td>
+                    <td className="mono" style={{ fontWeight: 700, color: "#4f46e5" }}>Rs. {p.total.toLocaleString()}</td>
                     <td className="mono" style={{ fontSize: "0.8rem", color: "var(--muted-foreground)" }}>{p.date}</td>
                     <td>
                       <div style={{ display: "flex", gap: 6 }}>
@@ -146,7 +146,7 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
                 <Fld label="Quantity">
                   <Stepper value={form.quantity} onChange={v => setForm(f => calcTotal({ ...f, quantity: v }))} />
                 </Fld>
-                <Fld label="Purchase Price (₹)">
+                <Fld label="Purchase Price (Rs.)">
                   <input type="number" value={form.purchasePrice} onChange={e => setForm(f => calcTotal({ ...f, purchasePrice: +e.target.value }))} style={inp} />
                 </Fld>
                 <Fld label="Purchase Date">
@@ -154,7 +154,7 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
                 </Fld>
                 <Fld label="Total Amount">
                   <div style={{ padding: "8px 12px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 7, fontWeight: 700, color: "#15803d", fontSize: "1.1rem" }}>
-                    ₹{(form.quantity * form.purchasePrice).toLocaleString()}
+                    Rs. {(form.quantity * form.purchasePrice).toLocaleString()}
                   </div>
                 </Fld>
               </div>

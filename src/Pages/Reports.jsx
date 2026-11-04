@@ -42,9 +42,9 @@ export default function Reports({ products, categories, suppliers, purchases, sa
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
         {[
-          { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, color: "#16a34a", bg: "#f0fdf4", Icon: DollarSign },
-          { label: "Total Cost", value: `₹${totalCost.toLocaleString()}`, color: "#dc2626", bg: "#fef2f2", Icon: ShoppingCart },
-          { label: "Gross Profit", value: `₹${grossProfit.toLocaleString()}`, color: grossProfit >= 0 ? "#4f46e5" : "#dc2626", bg: "#eef2ff", Icon: TrendingUp },
+          { label: "Total Revenue", value: `Rs. ${totalRevenue.toLocaleString()}`, color: "#16a34a", bg: "#f0fdf4", Icon: DollarSign },
+          { label: "Total Cost", value: `Rs. ${totalCost.toLocaleString()}`, color: "#dc2626", bg: "#fef2f2", Icon: ShoppingCart },
+          { label: "Gross Profit", value: `Rs. ${grossProfit.toLocaleString()}`, color: grossProfit >= 0 ? "#4f46e5" : "#dc2626", bg: "#eef2ff", Icon: TrendingUp },
           { label: "Profit Margin", value: `${margin}%`, color: "#d97706", bg: "#fffbeb", Icon: BarChart3 },
         ].map(s => {
           const IconComponent = s.Icon;
@@ -77,9 +77,9 @@ export default function Reports({ products, categories, suppliers, purchases, sa
                     <td style={{ fontWeight: 500 }}>{r.product.name}</td>
                     <td><span className="badge badge-blue">{r.category}</span></td>
                     <td className="mono">{r.salesQty}</td>
-                    <td className="mono" style={{ color: "#22c55e", fontWeight: 600 }}>₹{r.salesRevenue.toLocaleString()}</td>
-                    <td className="mono" style={{ color: "#ef4444" }}>₹{r.purchaseCost.toLocaleString()}</td>
-                    <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? "#4f46e5" : "#ef4444" }}>₹{profit.toLocaleString()}</td>
+                    <td className="mono" style={{ color: "#22c55e", fontWeight: 600 }}>Rs. {r.salesRevenue.toLocaleString()}</td>
+                    <td className="mono" style={{ color: "#ef4444" }}>Rs. {r.purchaseCost.toLocaleString()}</td>
+                    <td className="mono" style={{ fontWeight: 700, color: profit >= 0 ? "#4f46e5" : "#ef4444" }}>Rs. {profit.toLocaleString()}</td>
                     <td><span className={`badge ${parseFloat(marg) >= 30 ? "badge-green" : parseFloat(marg) >= 10 ? "badge-yellow" : "badge-red"}`}>{marg}%</span></td>
                   </tr>
                 );
@@ -102,7 +102,7 @@ export default function Reports({ products, categories, suppliers, purchases, sa
                   <tr key={c.category.id}>
                     <td style={{ fontWeight: 500 }}>{c.category.name}</td>
                     <td className="mono">{c.qty}</td>
-                    <td className="mono" style={{ color: "var(--primary)", fontWeight: 600 }}>₹{c.revenue.toLocaleString()}</td>
+                    <td className="mono" style={{ color: "var(--primary)", fontWeight: 600 }}>Rs. {c.revenue.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -122,7 +122,7 @@ export default function Reports({ products, categories, suppliers, purchases, sa
                   <tr key={s.supplier.id}>
                     <td style={{ fontWeight: 500 }}>{s.supplier.name}</td>
                     <td className="mono">{s.orders}</td>
-                    <td className="mono" style={{ color: "#ef4444", fontWeight: 600 }}>₹{s.total.toLocaleString()}</td>
+                    <td className="mono" style={{ color: "#ef4444", fontWeight: 600 }}>Rs. {s.total.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

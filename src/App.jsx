@@ -44,11 +44,16 @@ export default function App() {
     let active = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
-      setCurrentUser(profile(session?.user));
+      if (session?.user) {
+        setCurrentUser(profile(session.user));
+      }
       setAuthLoading(false);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (active) { setCurrentUser(profile(session?.user)); setAuthLoading(false); }
+      if (active) {
+        if (session?.user) setCurrentUser(profile(session.user));
+        setAuthLoading(false);
+      }
     }).catch(() => { if (active) setAuthLoading(false); });
     return () => { active = false; subscription.unsubscribe(); };
   }, []);
@@ -96,7 +101,7 @@ export default function App() {
   }, [currentUser, inventoryReady, categories, products, suppliers, purchases, sales]);
 
   const handleLogout = async () => {
-    if (supabase) await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut().catch(() => {});
     setCurrentUser(null);
     setCurrentPage("dashboard");
   };

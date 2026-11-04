@@ -3,14 +3,18 @@ import { supabase } from "../Authentication/supabase";
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 async function request(path, options = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("Your session has expired.");
+  let token = null;
+  if (supabase) {
+    const sessionRes = await supabase.auth.getSession().catch(() => ({ data: {} }));
+    token = sessionRes?.data?.session?.access_token;
+  }
+  if (!token) throw new Error("Your session has expired.");
 
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });

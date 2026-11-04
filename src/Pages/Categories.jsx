@@ -103,7 +103,7 @@ export default function Categories({ categories, setCategories, products }) {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
                     <div>
                       <div style={{ fontSize: "0.62rem", color: "var(--muted-foreground)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Sell Price</div>
-                      <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0d9488" }}>₹{p.sellingPrice}</div>
+                      <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0d9488" }}>Rs. {p.sellingPrice}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: "0.62rem", color: "var(--muted-foreground)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stock</div>

@@ -32,6 +32,15 @@ function Stepper({ value, min = 0, onChange }) {
   );
 }
 
+const getTomorrowDateString = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 const EMPTY = { name: "", categoryId: "", supplierId: "", purchasePrice: 0, sellingPrice: 0, quantity: 0, reorderLevel: 10, description: "", batchNo: "", expiryDate: "" };
 
 function getSuppliersForCategory(catId, allCategories, allSuppliers, allProducts) {
@@ -162,6 +171,11 @@ export default function Products({ products, setProducts, categories, suppliers 
       alert("Name, category and supplier are required.");
       return;
     }
+    const tomorrowDate = getTomorrowDateString();
+    if (form.expiryDate && form.expiryDate < tomorrowDate) {
+      alert("Expiry date cannot be today or in the past. Expiry date must start from tomorrow onwards.");
+      return;
+    }
     if (editing) {
       setProducts(prev => prev.map(p => p.id === editing.id ? { ...p, ...form } : p));
     } else {
@@ -216,8 +230,8 @@ export default function Products({ products, setProducts, categories, suppliers 
                 <th>Product</th>
                 <th>Category</th>
                 <th>Batch / Expiry</th>
-                <th>Purchase ₹</th>
-                <th>Sell ₹</th>
+                <th>Purchase (Rs.)</th>
+                <th>Sell (Rs.)</th>
                 <th>Stock</th>
                 <th>Status</th>
                 <th style={{ textAlign: "right" }}>Actions</th>
@@ -248,8 +262,8 @@ export default function Products({ products, setProducts, categories, suppliers 
                       <div style={{ fontSize: "0.75rem", fontFamily: "JetBrains Mono", color: "#374151" }}>{p.batchNo || "—"}</div>
                       {p.expiryDate && <div style={{ fontSize: "0.69rem", color: expiry?.status === "expired" ? "#b91c1c" : "var(--muted-foreground)", marginTop: 1 }}>{p.expiryDate}</div>}
                     </td>
-                    <td style={{ fontFamily: "JetBrains Mono", fontSize: "0.82rem" }}>₹{p.purchasePrice}</td>
-                    <td style={{ fontFamily: "JetBrains Mono", fontSize: "0.82rem", fontWeight: 600, color: "#0d9488" }}>₹{p.sellingPrice}</td>
+                    <td style={{ fontFamily: "JetBrains Mono", fontSize: "0.82rem" }}>Rs. {p.purchasePrice}</td>
+                    <td style={{ fontFamily: "JetBrains Mono", fontSize: "0.82rem", fontWeight: 600, color: "#0d9488" }}>Rs. {p.sellingPrice}</td>
                     <td>
                       <span style={{ fontFamily: "JetBrains Mono", fontSize: "0.82rem", fontWeight: 700, color: p.quantity === 0 ? "#ef4444" : stockLow ? "#f59e0b" : "#16a34a" }}>
                         {p.quantity}
@@ -368,10 +382,10 @@ export default function Products({ products, setProducts, categories, suppliers 
                   ))}
                 </select>
               </Fld>
-              <Fld label="Purchase Price (₹)">
+              <Fld label="Purchase Price (Rs.)">
                 <input type="number" min="0" value={form.purchasePrice} onChange={e => f("purchasePrice", Number(e.target.value))} style={inp} />
               </Fld>
-              <Fld label="Selling Price (₹)">
+              <Fld label="Selling Price (Rs.)">
                 <input type="number" min="0" value={form.sellingPrice} onChange={e => f("sellingPrice", Number(e.target.value))} style={inp} />
               </Fld>
               <Fld label="Quantity">
@@ -384,7 +398,13 @@ export default function Products({ products, setProducts, categories, suppliers 
                 <input value={form.batchNo} onChange={e => f("batchNo", e.target.value)} placeholder="e.g. B2026-09A" style={inp} />
               </Fld>
               <Fld label="Expiry Date">
-                <input type="date" value={form.expiryDate} onChange={e => f("expiryDate", e.target.value)} style={inp} />
+                <input
+                  type="date"
+                  min={getTomorrowDateString()}
+                  value={form.expiryDate}
+                  onChange={e => f("expiryDate", e.target.value)}
+                  style={inp}
+                />
               </Fld>
               <div style={{ gridColumn: "1/-1" }}>
                 <Fld label="Description">
@@ -393,6 +413,13 @@ export default function Products({ products, setProducts, categories, suppliers 
               </div>
             </div>
             {form.expiryDate && (() => {
+              if (form.expiryDate < getTomorrowDateString()) {
+                return (
+                  <div style={{ padding: "8px 12px", borderRadius: 8, background: "#fee2e2", color: "#b91c1c", fontSize: "0.78rem", fontWeight: 600 }}>
+                    ⚠️ Expiry date must start from tomorrow onwards.
+                  </div>
+                );
+              }
               const s = getExpiryStatus(form.expiryDate);
               const map = { expired: ["#fee2e2","#b91c1c"], today: ["#ffedd5","#c2410c"], near: ["#fef9c3","#a16207"], soon: ["#ccfbf1","#0f766e"], active: ["#dcfce7","#15803d"] };
               const [bg, color] = map[s?.status] || ["#dcfce7","#15803d"];
@@ -415,8 +442,8 @@ export default function Products({ products, setProducts, categories, suppliers 
               ["ID", viewProduct.id],
               ["Category", categories.find(c => c.id === viewProduct.categoryId)?.name ?? "—"],
               ["Supplier", suppliers.find(s => s.id === viewProduct.supplierId)?.name ?? "—"],
-              ["Purchase Price", `₹${viewProduct.purchasePrice}`],
-              ["Selling Price", `₹${viewProduct.sellingPrice}`],
+              ["Purchase Price", `Rs. ${viewProduct.purchasePrice}`],
+              ["Selling Price", `Rs. ${viewProduct.sellingPrice}`],
               ["Quantity", viewProduct.quantity],
               ["Reorder Level", viewProduct.reorderLevel],
               ["Batch No.", viewProduct.batchNo || "—"],

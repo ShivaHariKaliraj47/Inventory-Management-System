@@ -60,7 +60,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
         <div>
           <h2 style={{ fontFamily: "DM Sans", fontSize: "1.4rem", fontWeight: 700 }}>Sales</h2>
           <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
-            {sales.length} sales · Revenue: ₹{totalRev.toLocaleString()}
+            {sales.length} sales · Revenue: Rs. {totalRev.toLocaleString()}
           </p>
         </div>
         <button onClick={() => { setForm(EMPTY); setShowModal(true); }} style={addBtn}>+ Create Sale</button>
@@ -99,8 +99,8 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                       }
                     </td>
                     <td className="mono">{s.quantity}</td>
-                    <td className="mono">₹{s.sellingPrice}</td>
-                    <td className="mono" style={{ fontWeight: 700, color: "#3a9e6e" }}>₹{s.total.toLocaleString()}</td>
+                    <td className="mono">Rs. {s.sellingPrice}</td>
+                    <td className="mono" style={{ fontWeight: 700, color: "#3a9e6e" }}>Rs. {s.total.toLocaleString()}</td>
                     <td className="mono" style={{ fontSize: "0.78rem", color: "var(--muted-foreground)" }}>{s.date}</td>
                     <td>
                       <div style={{ display: "flex", gap: 5 }}>
@@ -160,7 +160,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                 <Fld label="Quantity">
                   <Stepper value={form.quantity} onChange={v => setForm(f => calcTotal({ ...f, quantity: v }))} />
                 </Fld>
-                <Fld label="Selling Price (₹)">
+                <Fld label="Selling Price (Rs.)">
                   <input type="number" value={form.sellingPrice} onChange={e => setForm(f => calcTotal({ ...f, sellingPrice: +e.target.value }))} style={inp} />
                 </Fld>
                 <Fld label="Sale Date">
@@ -168,7 +168,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                 </Fld>
                 <Fld label="Total Amount">
                   <div style={{ padding: "9px 12px", background: "#d1f5e4", border: "1px solid #86efac", borderRadius: 8, fontWeight: 700, color: "#1a6b44", fontSize: "1.1rem", fontFamily: "JetBrains Mono" }}>
-                    ₹{(form.quantity * form.sellingPrice).toLocaleString()}
+                    Rs. {(form.quantity * form.sellingPrice).toLocaleString()}
                   </div>
                 </Fld>
               </div>
@@ -212,7 +212,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                   ...(invoice.customer && invoice.customer.trim() ? [["Customer", invoice.customer]] : []),
                   ["Product", products.find(p => p.id === invoice.productId)?.name ?? invoice.productId],
                   ["Quantity", invoice.quantity],
-                  ["Unit Price", `₹${invoice.sellingPrice}`],
+                  ["Unit Price", `Rs. ${invoice.sellingPrice}`],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.855rem" }}>
                     <span style={{ color: "var(--muted-foreground)" }}>{k}</span>
@@ -221,7 +221,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                 ))}
                 <div style={{ borderTop: "2px solid var(--border)", paddingTop: 12, marginTop: 4, display: "flex", justifyContent: "space-between" }}>
                   <span style={{ fontWeight: 700, fontSize: "1rem" }}>Total Amount</span>
-                  <span style={{ fontWeight: 700, fontSize: "1.15rem", color: "#3a9e6e", fontFamily: "JetBrains Mono" }}>₹{invoice.total.toLocaleString()}</span>
+                  <span style={{ fontWeight: 700, fontSize: "1.15rem", color: "#3a9e6e", fontFamily: "JetBrains Mono" }}>Rs. {invoice.total.toLocaleString()}</span>
                 </div>
               </div>
 

@@ -1,9 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
-  Boxes,
-  CalendarClock,
   Check,
   Eye,
   EyeOff,
@@ -12,15 +10,15 @@ import {
   Phone,
   Send,
   ShieldCheck,
-  TrendingUp,
   UserRound,
   ExternalLink,
   RefreshCw,
 } from "lucide-react";
 import { supabase } from "./supabase";
 
+const nameRegex = /^[A-Za-z]+$/;
 const emailRegex = /^[A-Za-z][A-Za-z0-9._-]*@gmail\.com$/;
-const phoneRegex = /^(\+977)?[9][678]\d{8}$/;
+const phoneRegex = /^(98|97)\d{8}$/;
 const pwdRules = [
   { id: "len", label: "8–64 characters", test: value => value.length >= 8 && value.length <= 64 },
   { id: "upper", label: "Uppercase", test: value => /[A-Z]/.test(value) },
@@ -47,6 +45,36 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown(prev => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  useEffect(() => {
+    // Catch errors returned by Supabase email verification in URL hash or search params
+    const hash = window.location.hash ? window.location.hash.substring(1) : "";
+    const search = window.location.search ? window.location.search.substring(1) : "";
+    const params = new URLSearchParams(hash || search);
+    const errorDesc = params.get("error_description");
+    const errorMsg = params.get("error");
+    const errorCode = params.get("error_code");
+
+    if (errorDesc || errorMsg || errorCode) {
+      const raw = decodeURIComponent(errorDesc || errorMsg || errorCode).replace(/\+/g, " ");
+      if (errorCode === "otp_expired" || raw.toLowerCase().includes("expired") || raw.toLowerCase().includes("invalid")) {
+        setError("This confirmation link has expired or was already used. If you clicked it, your account may already be confirmed—try logging in below!");
+        setTab("signin");
+      } else {
+        setError(raw);
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const clearMessages = () => { setError(""); setSuccess(""); setFieldErrors({}); };
   const reset = () => {
@@ -65,6 +93,34 @@ export default function Login() {
       setFieldErrors(prev => {
         const next = { ...prev };
         delete next[key];
+        return next;
+      });
+    }
+    if (error) setError("");
+  };
+
+  const handleNameChange = (setter, key) => event => {
+    // Only letters A-Z and a-z allowed (no numbers, dots, underscores, special characters)
+    const cleaned = event.target.value.replace(/[^A-Za-z]/g, "");
+    setter(cleaned);
+    if (fieldErrors[key]) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+    if (error) setError("");
+  };
+
+  const handlePhoneChange = event => {
+    // Only digits, maximum 10
+    const cleaned = event.target.value.replace(/\D/g, "").slice(0, 10);
+    setPhone(cleaned);
+    if (fieldErrors.phone) {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.phone;
         return next;
       });
     }
@@ -126,11 +182,15 @@ export default function Login() {
     if (!firstName.trim()) {
       errors.firstName = "Please fill in your first name.";
       missing.push("First Name");
+    } else if (!nameRegex.test(firstName.trim())) {
+      errors.firstName = "Only letters are allowed. No numbers, dots, underscores, or special characters.";
     }
 
     if (!lastName.trim()) {
       errors.lastName = "Please fill in your last name.";
       missing.push("Last Name");
+    } else if (!nameRegex.test(lastName.trim())) {
+      errors.lastName = "Only letters are allowed. No numbers, dots, underscores, or special characters.";
     }
 
     if (!email.trim()) {
@@ -140,14 +200,16 @@ export default function Login() {
       errors.email = "Enter a valid Gmail address, such as name@gmail.com.";
     }
 
-    if (!phone.trim()) {
+    const cleanPhone = phone.trim().replace(/\D/g, "");
+    if (!cleanPhone) {
       errors.phone = "Please fill in your phone number.";
       missing.push("Phone");
-    } else {
-      const cleanDigits = phone.trim().replace(/[\s()-]/g, "");
-      if (!phoneRegex.test(cleanDigits)) {
-        errors.phone = "Enter a valid 10-digit phone number (e.g. 98XXXXXXXX).";
-      }
+    } else if (!cleanPhone.startsWith("98") && !cleanPhone.startsWith("97")) {
+      errors.phone = "Phone number must start with 98 or 97.";
+    } else if (cleanPhone.length !== 10) {
+      errors.phone = `Phone number must be exactly 10 digits (currently ${cleanPhone.length}).`;
+    } else if (!phoneRegex.test(cleanPhone)) {
+      errors.phone = "Phone number must start with 98 or 97 and have 10 digits.";
     }
 
     if (!password) {
@@ -181,10 +243,7 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const cleanDigits = phone.trim().replace(/[\s()-]/g, "");
-      const formattedPhone = cleanDigits.startsWith("+")
-        ? cleanDigits
-        : `+977${cleanDigits.replace(/^0+/, "")}`;
+      const formattedPhone = `+977${cleanPhone}`;
       const fullNameCombined = `${firstName.trim()} ${lastName.trim()}`.trim();
 
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -212,25 +271,34 @@ export default function Login() {
   };
 
   const handleResend = async () => {
-    if (!email) {
-      setError("Please enter your email to resend.");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setError("Please enter your Gmail address to resend the verification link.");
       return;
     }
+    if (resendCooldown > 0) return;
     clearMessages();
     setResending(true);
     try {
       const { error: resendError } = await supabase.auth.resend({
         type: "signup",
-        email,
+        email: cleanEmail,
         options: { emailRedirectTo: window.location.origin },
       });
       if (resendError) {
-        setError(resendError.message);
+        const msg = resendError.message || "";
+        if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("security") || resendError.status === 429) {
+          setError("Rate limit reached. Please wait 60 seconds before requesting another email, or check your spam folder.");
+          setResendCooldown(60);
+        } else {
+          setError(msg);
+        }
       } else {
-        setSuccess(`A fresh verification link has been sent to ${email}. Check your Gmail inbox and spam folder.`);
+        setSuccess(`A fresh verification link has been sent to ${cleanEmail}. Check your inbox and spam folder.`);
+        setResendCooldown(60);
       }
     } catch {
-      setError("Could not resend verification email. Please try again.");
+      setError("Could not resend verification email. Please check your network and try again.");
     } finally {
       setResending(false);
     }
@@ -297,16 +365,21 @@ export default function Login() {
   return (
     <main className="auth-page">
       <section className={`auth-shell ${createMode ? "auth-shell-create" : ""}`}>
-        <PromoPanel createMode={createMode} onAction={() => changeTab(createMode ? "signin" : "create")} />
-
         <div className="auth-form-panel">
+          {/* Brand Header */}
+          <div className="auth-brand-badge" style={{ justifyContent: "center", marginBottom: 20 }}>
+            <div className="auth-brand-badge-name">
+              Inventory Management System
+            </div>
+          </div>
+
           <div className="auth-form-wrap">
             {success && <StatusBox type="success">{success}</StatusBox>}
             {error && <StatusBox type="error">{error}</StatusBox>}
 
             {tab === "signin" && (
               <>
-                <FormHeading title="Sign in" subtitle="Log in to manage your inventory" />
+                <FormHeading title="Welcome!" subtitle="Log in to manage your inventory" />
                 <form className="auth-form" onSubmit={handleSignIn} noValidate>
                   <Field label="Gmail address" icon={Mail} error={fieldErrors.email}>
                     <AuthInput
@@ -327,6 +400,13 @@ export default function Login() {
                   </div>
                   <SubmitButton loading={loading}>{loading ? "Signing in…" : "Login Now"}</SubmitButton>
                 </form>
+
+                <div className="auth-switch-row">
+                  <span>Need a new store ledger?</span>
+                  <button type="button" className="auth-text-link" onClick={() => changeTab("create")}>
+                    Create account →
+                  </button>
+                </div>
               </>
             )}
 
@@ -336,17 +416,40 @@ export default function Login() {
                 <form className="auth-form auth-create-form" onSubmit={handleCreate} noValidate>
                   <div className="auth-field-grid">
                     <Field label="First name" icon={UserRound} error={fieldErrors.firstName}>
-                      <AuthInput value={firstName} onChange={handleInputChange(setFirstName, "firstName")} placeholder="First name" autoComplete="given-name" isError={!!fieldErrors.firstName} />
+                      <AuthInput
+                        value={firstName}
+                        onChange={handleNameChange(setFirstName, "firstName")}
+                        placeholder="First name"
+                        autoComplete="given-name"
+                        isError={!!fieldErrors.firstName}
+                      />
                     </Field>
                     <Field label="Last name" icon={UserRound} error={fieldErrors.lastName}>
-                      <AuthInput value={lastName} onChange={handleInputChange(setLastName, "lastName")} placeholder="Last name" autoComplete="family-name" isError={!!fieldErrors.lastName} />
+                      <AuthInput
+                        value={lastName}
+                        onChange={handleNameChange(setLastName, "lastName")}
+                        placeholder="Last name"
+                        autoComplete="family-name"
+                        isError={!!fieldErrors.lastName}
+                      />
                     </Field>
                   </div>
                   <Field label="Gmail address" icon={Mail} error={fieldErrors.email}>
                     <AuthInput type="email" value={email} onChange={handleInputChange(setEmail, "email")} placeholder="name@gmail.com" autoComplete="email" isError={!!fieldErrors.email} />
                   </Field>
                   <Field label="Phone number" icon={Phone} error={fieldErrors.phone}>
-                    <AuthInput type="tel" value={phone} onChange={handleInputChange(setPhone, "phone")} placeholder="98XXXXXXXX" autoComplete="tel" isError={!!fieldErrors.phone} />
+                    <div className={`auth-phone-group ${fieldErrors.phone ? "is-error" : ""}`}>
+                      <span className="auth-phone-prefix">+977</span>
+                      <input
+                        type="tel"
+                        className="auth-phone-input"
+                        value={phone}
+                        onChange={handlePhoneChange}
+                        placeholder="98XXXXXXXX"
+                        maxLength={10}
+                        autoComplete="tel-national"
+                      />
+                    </div>
                   </Field>
                   <Field label="Password" icon={LockKeyhole} error={fieldErrors.password}>
                     <PasswordInput value={password} onChange={handleInputChange(setPassword, "password")} show={showPass} onToggle={() => setShowPass(value => !value)} autoComplete="new-password" isError={!!fieldErrors.password} />
@@ -362,6 +465,13 @@ export default function Login() {
                   {fieldErrors.agree && <span className="auth-field-error" style={{ marginTop: -4, marginBottom: 4 }}>{fieldErrors.agree}</span>}
                   <SubmitButton loading={loading}>{loading ? "Creating account…" : "Create Account"}</SubmitButton>
                 </form>
+
+                <div className="auth-switch-row">
+                  <span>Already registered?</span>
+                  <button type="button" className="auth-text-link" onClick={() => changeTab("signin")}>
+                    Sign in to workspace →
+                  </button>
+                </div>
               </>
             )}
 
@@ -374,12 +484,13 @@ export default function Login() {
                   <FormHeading title="Verify your Gmail" subtitle={`Verification link sent to ${email}`} />
                 </div>
 
-                <div style={{ background: "#f8fafc", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 16px", fontSize: "0.82rem", color: "#334155", lineHeight: 1.55 }}>
-                  <strong style={{ color: "#0f172a", display: "block", marginBottom: 6 }}>How to verify your permission:</strong>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <div>1. Open your <strong>Gmail inbox</strong> ({email}).</div>
-                    <div>2. Click the <strong>Confirm your email</strong> link in the message.</div>
-                    <div>3. You will be verified and redirected straight into your dashboard!</div>
+                <div style={{ background: "#f8fafc", border: "1px solid var(--border)", borderRadius: 10, padding: "16px 18px", fontSize: "0.82rem", color: "#334155", lineHeight: 1.6 }}>
+                  <strong style={{ color: "#0f172a", display: "block", marginBottom: 8, fontSize: "0.86rem" }}>Next steps to activate your account:</strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                    <div>1. Open your <strong>Gmail inbox</strong> on this computer ({email || "your email"}).</div>
+                    <div>2. Look for the message with subject <em>"Confirm your signup"</em>.</div>
+                    <div>3. Click the <strong>Confirm your email</strong> link in the message.</div>
+                    <div>4. You will be automatically redirected to your dashboard!</div>
                   </div>
                 </div>
 
@@ -397,25 +508,30 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={handleResend}
-                    disabled={resending}
+                    disabled={resending || resendCooldown > 0}
                     style={{
                       width: "100%",
                       padding: "10px 16px",
                       borderRadius: "var(--radius)",
                       border: "1.5px solid var(--border)",
-                      background: "#fff",
+                      background: resendCooldown > 0 ? "var(--muted)" : "#fff",
                       fontSize: "0.84rem",
                       fontWeight: 600,
-                      cursor: resending ? "wait" : "pointer",
+                      cursor: resending || resendCooldown > 0 ? "not-allowed" : "pointer",
                       display: "inline-flex",
                       alignItems: "center",
                       justifyContent: "center",
                       gap: 8,
-                      color: "#334155",
+                      color: resendCooldown > 0 ? "var(--muted-foreground)" : "#334155",
+                      transition: "all 0.2s ease",
                     }}
                   >
-                    <RefreshCw size={14} />
-                    {resending ? "Sending fresh link…" : "Resend Verification Link"}
+                    <RefreshCw size={14} style={{ animation: resending ? "spin 1s linear infinite" : "none" }} />
+                    {resending
+                      ? "Sending fresh link…"
+                      : resendCooldown > 0
+                      ? `Resend link (in ${resendCooldown}s)`
+                      : "Resend Verification Link"}
                   </button>
 
                   <p style={{ margin: "4px 0 0", textAlign: "center", fontSize: "0.74rem", color: "var(--muted-foreground)" }}>
@@ -462,68 +578,6 @@ export default function Login() {
         </div>
       </section>
     </main>
-  );
-}
-
-function PromoPanel({ createMode, onAction }) {
-  return (
-    <aside className="auth-promo">
-      <div>
-        {/* Brand Header */}
-        <div className="auth-brand-badge">
-          <div className="auth-brand-icon-box">
-            <Boxes size={22} strokeWidth={2.2} />
-          </div>
-          <div className="auth-brand-badge-name">
-            Inventory Management System
-          </div>
-        </div>
-
-        {/* Hero Copy */}
-        <div className="auth-promo-hero">
-          <h2>Smarter Stock. Better Business.</h2>
-          <p>
-            Track stock, monitor expiry dates, and manage purchases and sales from one place.
-          </p>
-        </div>
-
-        {/* White Feature Card with 3 divided rows */}
-        <div className="auth-product-spec">
-          <div className="auth-spec-item">
-            <Boxes size={20} strokeWidth={2} />
-            <div>
-              <strong>Real-time stock tracking</strong>
-              <span>Keep product quantities accurate as purchases and sales occur.</span>
-            </div>
-          </div>
-
-          <div className="auth-spec-item">
-            <CalendarClock size={20} strokeWidth={2} />
-            <div>
-              <strong>Expiry and low-stock alerts</strong>
-              <span>Identify products that need attention before they become a problem.</span>
-            </div>
-          </div>
-
-          <div className="auth-spec-item">
-            <TrendingUp size={20} strokeWidth={2} />
-            <div>
-              <strong>Clear inventory reports</strong>
-              <span>Review stock levels, purchases, and sales in one dashboard.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ paddingTop: 20, borderTop: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>
-          {createMode ? "Already registered?" : "Need a new store ledger?"}
-        </span>
-        <button type="button" className="auth-text-link" onClick={onAction}>
-          {createMode ? "Sign in to workspace →" : "Create account →"}
-        </button>
-      </div>
-    </aside>
   );
 }
 

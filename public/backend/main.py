@@ -12,6 +12,7 @@ load_dotenv()
 
 from fastapi import Depends, FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import RedirectResponse  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
@@ -50,6 +51,11 @@ app.add_middleware(
     allow_methods=["GET", "PUT", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/api/health")

@@ -166,7 +166,7 @@ export default function Dashboard({ products = [], categories = [], suppliers = 
               lineHeight: 1.1,
               marginTop: 6
             }}>
-              ₹{totalRevenue.toLocaleString()}
+              Rs. {totalRevenue.toLocaleString()}
             </div>
           </div>
 
@@ -181,7 +181,7 @@ export default function Dashboard({ products = [], categories = [], suppliers = 
             <div>
               <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontWeight: 500 }}>Net Gross Profit</div>
               <div style={{ fontSize: "1.05rem", fontWeight: 700, color: grossProfit >= 0 ? "var(--foreground)" : "#b91c1c", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
-                ₹{grossProfit.toLocaleString()}
+                Rs. {grossProfit.toLocaleString()}
               </div>
             </div>
             <div>
@@ -193,7 +193,7 @@ export default function Dashboard({ products = [], categories = [], suppliers = 
             <div>
               <div style={{ fontSize: "0.68rem", color: "var(--muted-foreground)", fontWeight: 500 }}>Average Order Value</div>
               <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--foreground)", fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
-                ₹{avgOrderValue.toLocaleString()}
+                Rs. {avgOrderValue.toLocaleString()}
               </div>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function Dashboard({ products = [], categories = [], suppliers = 
             </div>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 3 }}>
               <span style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>
-                ₹{inventoryAssetValue.toLocaleString()}
+                Rs. {inventoryAssetValue.toLocaleString()}
               </span>
               <span style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
                 {totalUnitsInStock.toLocaleString()} units · {products.length} SKUs
@@ -262,7 +262,7 @@ export default function Dashboard({ products = [], categories = [], suppliers = 
             </div>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 3 }}>
               <span style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--foreground)", fontVariantNumeric: "tabular-nums" }}>
-                ₹{totalCost.toLocaleString()}
+                Rs. {totalCost.toLocaleString()}
               </span>
               <span style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontVariantNumeric: "tabular-nums" }}>
                 {purchases.length} invoices · {suppliers.length} suppliers
@@ -384,7 +384,7 @@ export default function Dashboard({ products = [], categories = [], suppliers = 
                   </div>
                   <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                     <div style={{ fontWeight: 700, fontSize: "0.83rem", color: "var(--foreground)" }}>
-                      ₹{b.total.toLocaleString()}
+                      Rs. {b.total.toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -436,7 +436,7 @@ export default function Dashboard({ products = [], categories = [], suppliers = 
                       {p?.name ?? s.productId}
                     </td>
                     <td style={{ padding: "9px 16px", textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontWeight: 600, color: "var(--foreground)", fontSize: "0.8rem", fontVariantNumeric: "tabular-nums" }}>
-                      ₹{s.total.toLocaleString()}
+                      Rs. {s.total.toLocaleString()}
                     </td>
                   </tr>
                 );
