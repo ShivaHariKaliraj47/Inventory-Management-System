@@ -36,7 +36,7 @@ export default function Reports({ products, categories, suppliers, purchases, sa
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
-        <h2 style={{ margin: 0, fontFamily: "DM Sans", fontSize: "1.4rem", fontWeight: 700 }}>Reports</h2>
+        <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>Reports</h2>
         <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>Financial and inventory summary</p>
       </div>
 
@@ -54,7 +54,7 @@ export default function Reports({ products, categories, suppliers, purchases, sa
                 <IconComponent size={20} />
               </div>
               <div style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{s.label}</div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color, fontFamily: "DM Sans" }}>{s.value}</div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color }}>{s.value}</div>
             </div>
           );
         })}
@@ -62,7 +62,7 @@ export default function Reports({ products, categories, suppliers, purchases, sa
 
       <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
-          <strong style={{ fontFamily: "DM Sans" }}>Product Sales Report</strong>
+          <strong>Product Sales Report</strong>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table>
@@ -92,7 +92,7 @@ export default function Reports({ products, categories, suppliers, purchases, sa
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
-            <strong style={{ fontFamily: "DM Sans" }}>Sales by Category</strong>
+            <strong>Sales by Category</strong>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table>
@@ -112,7 +112,7 @@ export default function Reports({ products, categories, suppliers, purchases, sa
 
         <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
-            <strong style={{ fontFamily: "DM Sans" }}>Supplier Order Summary</strong>
+            <strong>Supplier Order Summary</strong>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table>

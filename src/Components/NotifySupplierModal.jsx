@@ -191,7 +191,7 @@ export default function NotifySupplierModal({ product, supplier, onClose, onSent
               <Mail size={17} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, fontFamily: "DM Sans" }}>Notify Supplier: Low Stock</h3>
+              <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>Notify Supplier: Low Stock</h3>
               <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--muted-foreground)" }}>Manual trigger — sent only when you click</p>
             </div>
           </div>

@@ -145,7 +145,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
           </div>
           {sidebarOpen && (
             <div>
-              <div style={{ color: "#f1f5f9", fontFamily: "DM Sans", fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.02em", lineHeight: 1.2 }}>IMS</div>
+              <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.02em", lineHeight: 1.2 }}>IMS</div>
             </div>
           )}
         </div>
@@ -329,7 +329,7 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
             {showNotifs && (
               <DropMenu width={320} onClose={() => setShowNotifs(false)}>
                 <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 700, fontSize: "0.875rem", fontFamily: "DM Sans" }}>Notifications</span>
+                  <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>Notifications</span>
                   <span className="badge badge-red">{notifications.length}</span>
                 </div>
                 {notifications.map(n => {

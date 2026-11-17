@@ -134,7 +134,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2 style={{ fontFamily: "DM Sans", fontSize: "1.4rem", fontWeight: 700 }}>Sales</h2>
+          <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>Sales</h2>
           <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
             {sales.length} sales · Revenue: Rs. {totalRev.toLocaleString()}
           </p>
@@ -197,7 +197,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
         <div style={overlay}>
           <div style={mBox}>
             <div style={mHdr}>
-              <strong style={{ fontFamily: "DM Sans", fontSize: "1rem" }}>Create New Sale</strong>
+              <strong style={{ fontSize: "1rem" }}>Create New Sale</strong>
               <button onClick={() => setShowModal(false)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -262,7 +262,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
         <div style={overlay}>
           <div id="printable-invoice" style={{ ...mBox, maxWidth: 420 }}>
             <div style={mHdr} className="no-print">
-              <strong style={{ fontFamily: "DM Sans" }}>Sales Receipt / Tax Invoice</strong>
+              <strong>Sales Receipt / Tax Invoice</strong>
               <button onClick={() => setInvoice(null)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 26 }}>
@@ -277,7 +277,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                     <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
                   </svg>
                 </div>
-                <div style={{ fontFamily: "DM Sans", fontSize: "1.3rem", fontWeight: 700, color: "#1c1916" }}>IMS Store</div>
+                <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1c1916" }}>IMS Store</div>
                 <div style={{ color: "var(--muted-foreground)", fontSize: "0.75rem" }}>Inventory Management System • Nepal</div>
               </div>
 
@@ -329,7 +329,7 @@ export default function Sales({ sales, setSales, products, setProducts }) {
   );
 }
 
-const addBtn = { padding: "9px 18px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 9, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem", fontFamily: "DM Sans" };
+const addBtn = { padding: "9px 18px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 9, fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" };
 const searchStyle = { width: "100%", maxWidth: 320, padding: "7px 12px", border: "1.5px solid var(--border)", borderRadius: 8, background: "var(--muted)", fontSize: "0.875rem", outline: "none", boxSizing: "border-box" };
 const ab = (c) => ({ padding: "4px 10px", border: `1px solid ${c}22`, borderRadius: 5, background: c + "18", color: c, cursor: "pointer", fontSize: "0.75rem", fontWeight: 500 });
 const overlay = { position: "fixed", inset: 0, background: "rgba(28,25,22,0.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
@@ -337,8 +337,8 @@ const mBox = { background: "#fff", borderRadius: 14, width: "100%", maxWidth: 52
 const mHdr = { padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" };
 const xBtn = { background: "none", border: "none", cursor: "pointer", fontSize: "1.1rem", color: "var(--muted-foreground)", padding: 2 };
 const inp = { width: "100%", padding: "9px 11px", border: "1.5px solid var(--border)", borderRadius: 8, background: "var(--muted)", fontSize: "0.875rem", outline: "none", boxSizing: "border-box" };
-const cancelBtn = { padding: "9px 18px", border: "1.5px solid var(--border)", borderRadius: 9, background: "var(--muted)", cursor: "pointer", fontFamily: "DM Sans" };
-const saveBtn = { padding: "9px 18px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 9, cursor: "pointer", fontWeight: 600, fontFamily: "DM Sans" };
+const cancelBtn = { padding: "9px 18px", border: "1.5px solid var(--border)", borderRadius: 9, background: "var(--muted)", cursor: "pointer" };
+const saveBtn = { padding: "9px 18px", background: "var(--primary)", color: "#fff", border: "none", borderRadius: 9, cursor: "pointer", fontWeight: 600 };
 
 function Fld({ label, children }) {
   return <div><label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#4a3f2f", marginBottom: 5 }}>{label}</label>{children}</div>;

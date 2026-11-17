@@ -55,7 +55,7 @@ export default function ExpiryManagement({ products, setProducts, categories }) 
         {TABS.map(t => (
           <div key={t.key} onClick={() => setActiveTab(t.key)}
             style={{ background: activeTab === t.key ? t.bg : "#fff", border: `1.5px solid ${activeTab === t.key ? t.border : "var(--border)"}`, borderRadius: 11, padding: "14px 16px", cursor: "pointer", transition: "all 0.15s" }}>
-            <div style={{ fontSize: "1.8rem", fontWeight: 700, color: t.color, fontFamily: "DM Sans" }}>{counts[t.key]}</div>
+            <div style={{ fontSize: "1.8rem", fontWeight: 700, color: t.color }}>{counts[t.key]}</div>
             <div style={{ fontSize: "0.75rem", fontWeight: 600, color: t.color, marginTop: 2 }}>{t.label}</div>
           </div>
         ))}

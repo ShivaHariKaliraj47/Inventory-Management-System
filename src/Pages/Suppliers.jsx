@@ -37,7 +37,7 @@ export default function Suppliers({ suppliers, setSuppliers }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2 style={{ margin: 0, fontFamily: "DM Sans", fontSize: "1.4rem", fontWeight: 700 }}>Suppliers</h2>
+          <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>Suppliers</h2>
           <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>{suppliers.length} suppliers registered</p>
         </div>
         <button onClick={openAdd} style={addBtn}>+ Add Supplier</button>
@@ -77,7 +77,7 @@ export default function Suppliers({ suppliers, setSuppliers }) {
         <div style={overlay}>
           <div style={mBox}>
             <div style={mHdr}>
-              <strong style={{ fontFamily: "DM Sans" }}>{editing ? "Edit Supplier" : "Add Supplier"}</strong>
+              <strong>{editing ? "Edit Supplier" : "Add Supplier"}</strong>
               <button onClick={() => setShowModal(false)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -101,7 +101,7 @@ export default function Suppliers({ suppliers, setSuppliers }) {
         <div style={overlay}>
           <div style={mBox}>
             <div style={mHdr}>
-              <strong style={{ fontFamily: "DM Sans" }}>Supplier Details</strong>
+              <strong>Supplier Details</strong>
               <button onClick={() => setViewItem(null)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 20 }}>

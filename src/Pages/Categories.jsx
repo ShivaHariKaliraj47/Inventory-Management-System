@@ -17,7 +17,7 @@ function Modal({ title, onClose, children }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
       <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 460, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
         <div style={{ padding: "16px 22px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontFamily: "DM Sans", fontSize: "1rem", fontWeight: 700 }}>{title}</h3>
+          <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>{title}</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted-foreground)", display: "flex", alignItems: "center" }}>
             <X size={18} />
           </button>
@@ -155,7 +155,7 @@ export default function Categories({ categories, setCategories, products }) {
                   <button onClick={e => del(cat.id, e)} style={{ padding: "5px 10px", fontSize: "0.72rem", border: "1px solid #fca5a5", borderRadius: 6, background: "#fee2e2", color: "#b91c1c", cursor: "pointer", fontWeight: 600 }}>Del</button>
                 </div>
               </div>
-              <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 4, fontFamily: "DM Sans" }}>{cat.name}</div>
+              <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: 4 }}>{cat.name}</div>
               <div style={{ fontSize: "0.77rem", color: "var(--muted-foreground)", marginBottom: 12, lineHeight: 1.4 }}>{cat.description}</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ fontSize: "0.77rem", color: "var(--muted-foreground)", display: "flex", alignItems: "center", gap: 5 }}>

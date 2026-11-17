@@ -23,7 +23,7 @@ export default function StockRecords({ products, purchases, sales, categories, s
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <h2 style={{ margin: 0, fontFamily: "DM Sans", fontSize: "1.4rem", fontWeight: 700 }}>Stock Records</h2>
+        <h2 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>Stock Records</h2>
         <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
           {lowStockCount} item{lowStockCount !== 1 ? "s" : ""} below reorder level
         </p>
@@ -44,7 +44,7 @@ export default function StockRecords({ products, purchases, sales, categories, s
               </div>
               <div>
                 <div style={{ fontSize: "0.72rem", color: "var(--muted-foreground)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
-                <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color, fontFamily: "DM Sans" }}>{s.value}</div>
+                <div style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color }}>{s.value}</div>
               </div>
             </div>
           );
@@ -53,7 +53,7 @@ export default function StockRecords({ products, purchases, sales, categories, s
 
       <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
-          <strong style={{ fontFamily: "DM Sans", fontSize: "0.95rem" }}>Stock Movement Overview</strong>
+          <strong style={{ fontSize: "0.95rem" }}>Stock Movement Overview</strong>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ minWidth: 980 }}>
