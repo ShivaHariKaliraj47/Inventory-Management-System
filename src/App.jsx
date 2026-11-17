@@ -32,6 +32,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(!!supabase);
   const [inventoryReady, setInventoryReady] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [saveStatus, setSaveStatus] = useState("saved"); // "saved" | "saving" | "offline"
 
   const [categories, setCategories] = useState(initialCategories);
   const [products, setProducts] = useState(initialProducts);
@@ -81,21 +82,43 @@ export default function App() {
           setSuppliers(mergedSuppliers);
           setPurchases(mergedPurchases);
           setSales(mergedSales);
+          setSaveStatus("saved");
+        } else {
+          setSaveStatus("saved");
         }
         setInventoryReady(true);
       })
       .catch(error => {
         console.error("Inventory backend unavailable:", error);
-        if (active) setInventoryReady(true);
+        if (active) {
+          setSaveStatus("offline");
+          setInventoryReady(true);
+        }
       });
     return () => { active = false; };
   }, [currentUser?.id]);
 
+  const handleRetrySync = () => {
+    if (!currentUser) return;
+    setSaveStatus("saving");
+    saveInventory({ categories, products, suppliers, purchases, sales })
+      .then(() => setSaveStatus("saved"))
+      .catch(error => {
+        console.error("Unable to save inventory:", error);
+        setSaveStatus("offline");
+      });
+  };
+
   useEffect(() => {
     if (!currentUser || !inventoryReady) return;
+    setSaveStatus("saving");
     const timer = window.setTimeout(() => {
       saveInventory({ categories, products, suppliers, purchases, sales })
-        .catch(error => console.error("Unable to save inventory:", error));
+        .then(() => setSaveStatus("saved"))
+        .catch(error => {
+          console.error("Unable to save inventory:", error);
+          setSaveStatus("offline");
+        });
     }, 500);
     return () => window.clearTimeout(timer);
   }, [currentUser, inventoryReady, categories, products, suppliers, purchases, sales]);
@@ -131,7 +154,15 @@ export default function App() {
   };
 
   return (
-    <Layout currentPage={currentPage} setCurrentPage={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} shared={shared}>
+    <Layout
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      currentUser={currentUser}
+      onLogout={handleLogout}
+      shared={shared}
+      saveStatus={saveStatus}
+      onRetrySync={handleRetrySync}
+    >
       {renderPage()}
     </Layout>
   );

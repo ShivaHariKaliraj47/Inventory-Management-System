@@ -37,7 +37,7 @@ const NAV_ITEMS = [
   { key: "settings",   label: "Settings",         Icon: SettingsIcon },
 ];
 
-export default function Layout({ currentPage, setCurrentPage, currentUser, onLogout, children, shared }) {
+export default function Layout({ currentPage, setCurrentPage, currentUser, onLogout, children, shared, saveStatus = "saved", onRetrySync }) {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -275,6 +275,33 @@ export default function Layout({ currentPage, setCurrentPage, currentUser, onLog
           </div>
 
           <div style={{ flex: 1 }} />
+
+          {/* Network & Save Status Indicator */}
+          <div style={{ display: "flex", alignItems: "center", marginRight: 8 }}>
+            {saveStatus === "saving" && (
+              <div title="Saving changes to database…" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: "#b45309", background: "#fef3c7", border: "1px solid #fde68a", padding: "3px 10px", borderRadius: 20, fontWeight: 600 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />
+                Saving…
+              </div>
+            )}
+            {saveStatus === "saved" && (
+              <div title="All changes saved to database" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: "#15803d", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "3px 10px", borderRadius: 20, fontWeight: 600 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
+                Saved
+              </div>
+            )}
+            {saveStatus === "offline" && (
+              <button
+                type="button"
+                onClick={onRetrySync}
+                title="Backend server unreachable. Click to retry saving."
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.75rem", color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "3px 10px", borderRadius: 20, fontWeight: 600, cursor: "pointer" }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
+                Offline (Retry ↻)
+              </button>
+            )}
+          </div>
 
           {/* Quick calculator */}
           <div style={{ position: "relative" }}>

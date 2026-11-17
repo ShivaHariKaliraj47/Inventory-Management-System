@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getExpiryStatus } from "../data";
-import { AlertTriangle, Clock, X, Check } from "lucide-react";
+import { AlertTriangle, Clock, X, Check, Printer } from "lucide-react";
 
 const EMPTY = { productId: "", quantity: 1, sellingPrice: 0, total: 0, date: new Date().toISOString().split("T")[0], customer: "" };
 
@@ -49,7 +49,83 @@ export default function Sales({ sales, setSales, products, setProducts }) {
   };
 
   const handleDelete = (id) => {
-    if (confirm("Delete this sale?")) setSales(sales.filter(s => s.id !== id));
+    const saleToDelete = sales.find(s => s.id === id);
+    if (!saleToDelete) return;
+    const prod = products.find(p => p.id === saleToDelete.productId);
+    const prodName = prod?.name || saleToDelete.productId;
+    if (confirm(`Delete sale ${id}? This will restore ${saleToDelete.quantity} unit(s) of "${prodName}" back to product stock.`)) {
+      setSales(sales.filter(s => s.id !== id));
+      if (setProducts) {
+        setProducts(prevProducts =>
+          prevProducts.map(p =>
+            p.id === saleToDelete.productId
+              ? { ...p, quantity: (p.quantity || 0) + Number(saleToDelete.quantity) }
+              : p
+          )
+        );
+      }
+    }
+  };
+
+  const handlePrint = (inv) => {
+    if (!inv) return;
+    const prod = products.find(p => p.id === inv.productId);
+    const prodName = prod?.name ?? inv.productId;
+    const customerName = inv.customer && inv.customer.trim() ? inv.customer : "Walk-in Customer";
+
+    const printWin = window.open("", "_blank", "width=420,height=600");
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - ${inv.id}</title>
+          <meta charset="utf-8">
+          <style>
+            @page { size: auto; margin: 10mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; color: #1c1916; font-size: 13px; }
+            .receipt { max-width: 340px; margin: 0 auto; border: 1px dashed #bbb; padding: 18px; border-radius: 8px; }
+            .header { text-align: center; margin-bottom: 14px; }
+            .store-title { font-size: 18px; font-weight: 700; }
+            .store-sub { font-size: 11px; color: #666; margin-top: 2px; }
+            .divider { border: none; border-top: 1px dashed #ccc; margin: 10px 0; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 12.5px; }
+            .label { color: #555; }
+            .val { font-weight: 600; text-align: right; }
+            .total-row { display: flex; justify-content: space-between; border-top: 2px solid #222; padding-top: 10px; margin-top: 10px; font-size: 15px; font-weight: 700; }
+            .footer { text-align: center; margin-top: 16px; padding: 8px; background: #dcfce7; border-radius: 6px; color: #15803d; font-size: 11.5px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <div class="header">
+              <div class="store-title">IMS Store</div>
+              <div class="store-sub">Inventory Management System • Nepal</div>
+            </div>
+            <hr class="divider" />
+            <div class="row"><span class="label">Invoice No:</span><span class="val">${inv.id}</span></div>
+            <div class="row"><span class="label">Date:</span><span class="val">${inv.date}</span></div>
+            <div class="row"><span class="label">Customer:</span><span class="val">${customerName}</span></div>
+            <div class="row"><span class="label">Product:</span><span class="val">${prodName}</span></div>
+            <div class="row"><span class="label">Quantity:</span><span class="val">${inv.quantity}</span></div>
+            <div class="row"><span class="label">Unit Price:</span><span class="val">Rs. ${inv.sellingPrice}</span></div>
+            <div class="total-row"><span>Total Amount:</span><span style="color: #15803d;">Rs. ${inv.total.toLocaleString()}</span></div>
+            <div class="footer">✓ Thank you for your purchase!</div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
   };
 
   const totalRev = sales.reduce((s, x) => s + x.total, 0);
@@ -184,14 +260,14 @@ export default function Sales({ sales, setSales, products, setProducts }) {
       {/* Invoice */}
       {invoice && (
         <div style={overlay}>
-          <div style={{ ...mBox, maxWidth: 400 }}>
-            <div style={mHdr}>
-              <strong style={{ fontFamily: "DM Sans" }}>Tax Invoice</strong>
+          <div id="printable-invoice" style={{ ...mBox, maxWidth: 420 }}>
+            <div style={mHdr} className="no-print">
+              <strong style={{ fontFamily: "DM Sans" }}>Sales Receipt / Tax Invoice</strong>
               <button onClick={() => setInvoice(null)} style={xBtn}><X size={18} /></button>
             </div>
             <div style={{ padding: 26 }}>
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <div style={{
+              <div style={{ textAlign: "center", marginBottom: 20 }}>
+                <div className="no-print" style={{
                   width: 44, height: 44, borderRadius: 10,
                   background: "var(--primary)",
                   display: "flex", alignItems: "center", justifyContent: "center",
@@ -201,15 +277,15 @@ export default function Sales({ sales, setSales, products, setProducts }) {
                     <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
                   </svg>
                 </div>
-                <div style={{ fontFamily: "DM Sans", fontSize: "1.3rem", fontWeight: 700, color: "#1c1916" }}>IMS Flow</div>
-                <div style={{ color: "var(--muted-foreground)", fontSize: "0.75rem" }}>Inventory Management System</div>
+                <div style={{ fontFamily: "DM Sans", fontSize: "1.3rem", fontWeight: 700, color: "#1c1916" }}>IMS Store</div>
+                <div style={{ color: "var(--muted-foreground)", fontSize: "0.75rem" }}>Inventory Management System • Nepal</div>
               </div>
 
               <div style={{ borderTop: "1px dashed var(--border)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
                   ["Invoice No.", invoice.id],
                   ["Date", invoice.date],
-                  ...(invoice.customer && invoice.customer.trim() ? [["Customer", invoice.customer]] : []),
+                  ...(invoice.customer && invoice.customer.trim() ? [["Customer", invoice.customer]] : [["Customer", "Walk-in Customer"]]),
                   ["Product", products.find(p => p.id === invoice.productId)?.name ?? invoice.productId],
                   ["Quantity", invoice.quantity],
                   ["Unit Price", `Rs. ${invoice.sellingPrice}`],
@@ -228,7 +304,23 @@ export default function Sales({ sales, setSales, products, setProducts }) {
               <div style={{ textAlign: "center", marginTop: 18, padding: "10px", background: "#d1f5e4", borderRadius: 9, color: "#1a6b44", fontSize: "0.8rem", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 <Check size={16} /> Thank you for your purchase!
               </div>
-              <button onClick={() => setInvoice(null)} style={{ ...saveBtn, width: "100%", marginTop: 16 }}>Close Invoice</button>
+
+              <div className="no-print" style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => handlePrint(invoice)}
+                  style={{ ...saveBtn, flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                >
+                  <Printer size={16} /> Print Receipt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInvoice(null)}
+                  style={{ ...cancelBtn, flex: 1 }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

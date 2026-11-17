@@ -36,17 +36,50 @@ export default function Purchases({ purchases, setPurchases, suppliers, products
     if (!form.supplierId || !form.productId) return;
     const final = calcTotal(form);
     if (editing) {
+      const qtyDiff = Number(form.quantity) - Number(editing.quantity);
       setPurchases(purchases.map(p => p.id === editing.id ? { ...final, id: editing.id } : p));
+      if (qtyDiff !== 0 && setProducts) {
+        setProducts(prevProducts =>
+          prevProducts.map(p =>
+            p.id === form.productId
+              ? { ...p, quantity: Math.max(0, (p.quantity || 0) + qtyDiff) }
+              : p
+          )
+        );
+      }
     } else {
       const id = "PUR" + String(purchases.length + 1).padStart(3, "0");
       setPurchases([...purchases, { ...final, id }]);
-      setProducts(products.map(p => p.id === form.productId ? { ...p, quantity: p.quantity + form.quantity } : p));
+      if (setProducts) {
+        setProducts(prevProducts =>
+          prevProducts.map(p =>
+            p.id === form.productId
+              ? { ...p, quantity: (p.quantity || 0) + Number(form.quantity) }
+              : p
+          )
+        );
+      }
     }
     setShowModal(false);
   };
 
   const handleDelete = (id) => {
-    if (confirm("Delete this purchase?")) setPurchases(purchases.filter(p => p.id !== id));
+    const purchaseToDelete = purchases.find(p => p.id === id);
+    if (!purchaseToDelete) return;
+    const prod = products.find(p => p.id === purchaseToDelete.productId);
+    const prodName = prod?.name || purchaseToDelete.productId;
+    if (confirm(`Delete purchase ${id}? This will deduct ${purchaseToDelete.quantity} unit(s) of "${prodName}" from product stock.`)) {
+      setPurchases(purchases.filter(p => p.id !== id));
+      if (setProducts) {
+        setProducts(prevProducts =>
+          prevProducts.map(p =>
+            p.id === purchaseToDelete.productId
+              ? { ...p, quantity: Math.max(0, (p.quantity || 0) - Number(purchaseToDelete.quantity)) }
+              : p
+          )
+        );
+      }
+    }
   };
 
   return (
